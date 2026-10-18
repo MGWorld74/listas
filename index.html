@@ -54,7 +54,6 @@
 
         .form-group.sector-group {
             flex: 1;
-            position: relative;
         }
 
         label {
@@ -63,7 +62,7 @@
             font-size: 0.95rem;
         }
 
-        input[type="text"] {
+        input[type="text"], select {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -72,28 +71,12 @@
             width: 100%;
         }
 
+        /* Ajusta o select para o tamanho do maior texto */
         #itemSector {
             width: auto;
             min-width: 140px;
-        }
-
-        .add-sector-container {
-            margin-top: 5px;
-        }
-
-        .add-sector-btn {
-            background: transparent;
-            border: 1px dashed var(--primary-color);
-            color: var(--primary-color);
-            padding: 4px 8px;
-            border-radius: 4px;
+            background-color: white;
             cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .add-sector-btn:hover {
-            background: #e0e7ff;
         }
 
         .selection-section {
@@ -192,13 +175,31 @@
             margin-bottom: 8px;
         }
 
-        .item-info {
-            font-size: 0.95rem;
+        .item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .item-details {
-            font-size: 0.8rem;
-            color: #6b7280;
+        .item-image {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: #f3f4f6;
+        }
+
+        .item-characteristics {
+            font-size: 0.75rem;
+            color: #4f46e5;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .item-info {
+            font-size: 0.95rem;
         }
 
         .btn-search {
@@ -232,13 +233,10 @@
 
             <div class="form-group sector-group">
                 <label for="itemSector">Setor:</label>
-                <input type="text" id="itemSector" list="sectorList" placeholder="Setor..." required oninput="adjustSectorWidth(this)">
-                <datalist id="sectorList">
-                    <!-- Preenchido via JS -->
-                </datalist>
-                <div class="add-sector-container">
-                    <button type="button" class="add-sector-btn" onclick="addNewSector()">+ Adicionar Setor</button>
-                </div>
+                <select id="itemSector" required onchange="handleSectorChange(this)">
+                    <option value="" disabled selected>Selecione...</option>
+                    <!-- Opções geradas via JS -->
+                </select>
             </div>
         </div>
 
@@ -285,58 +283,76 @@
         outros: ""
     };
 
-    // Ajusta dinamicamente a largura do input de setor baseado no texto atual
-    function adjustSectorWidth(input) {
-        const text = input.value || input.placeholder;
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        context.font = window.getComputedStyle(input).font;
-        const width = context.measureText(text).width;
-        input.style.width = Math.max(130, width + 30) + 'px';
+    // Ajusta a largura do select para o tamanho do texto selecionado
+    function adjustSelectWidth(selectElement) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const text = selectedOption.text;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            context.font = window.getComputedStyle(selectElement).font;
+            const width = context.measureText(text).width;
+            selectElement.style.width = Math.max(140, width + 50) + 'px';
+        }
     }
 
-    // Atualiza a lista suspensa (datalist) de setores em ordem alfabética
-    function renderSectorsDatalist() {
-        const datalist = document.getElementById('sectorList');
-        datalist.innerHTML = '';
+    // Renderiza as opções do select de setores em ordem alfabética + a opção de adicionar
+    function renderSectorsSelect(selectedVal = "") {
+        const select = document.getElementById('itemSector');
+        select.innerHTML = '<option value="" disabled>Selecione o Setor...</option>';
         
         sectorsList.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 
         sectorsList.forEach(sector => {
             const option = document.createElement('option');
             option.value = sector;
-            datalist.appendChild(option);
+            option.textContent = sector;
+            if (sector === selectedVal) {
+                option.selected = true;
+            }
+            select.appendChild(option);
         });
+
+        // Opção especial dentro da lista para adicionar novo setor
+        const addOption = document.createElement('option');
+        addOption.value = "__ADD_NEW__";
+        addOption.textContent = "+ Adicionar Setor...";
+        select.appendChild(addOption);
+
+        if (!selectedVal) {
+            select.selectedIndex = 0;
+        }
+        adjustSelectWidth(select);
     }
 
-    // Adiciona um novo setor dinamicamente
-    function addNewSector() {
-        const novo = prompt("Digite o nome do novo Setor:");
-        if (novo && novo.trim() !== "") {
-            const trimmed = novo.trim().toUpperCase();
-            if (!sectorsList.includes(trimmed)) {
-                sectorsList.push(trimmed);
-                localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
-                renderSectorsDatalist();
-                
-                // Seleciona automaticamente o novo setor e ajusta o tamanho
-                const sectorInput = document.getElementById('itemSector');
-                sectorInput.value = trimmed;
-                adjustSectorWidth(sectorInput);
+    // Controla quando o usuário clica na opção de adicionar dentro do select
+    function handleSectorChange(select) {
+        if (select.value === "__ADD_NEW__") {
+            const novo = prompt("Digite o nome do novo Setor:");
+            if (novo && novo.trim() !== "") {
+                const trimmed = novo.trim().toUpperCase();
+                if (!sectorsList.includes(trimmed)) {
+                    sectorsList.push(trimmed);
+                    localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
+                    renderSectorsSelect(trimmed); // Seleciona automaticamente o novo setor
+                } else {
+                    alert("Este setor já existe!");
+                    renderSectorsSelect();
+                }
             } else {
-                alert("Este setor já existe!");
+                renderSectorsSelect();
             }
+        } else {
+            adjustSelectWidth(select);
         }
     }
 
     // Sugestão automática de setor baseada no nome do item
     document.getElementById('itemName').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
-        const sectorInput = document.getElementById('itemSector');
         if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
             if (sectorsList.includes('FARMÁCIA')) {
-                sectorInput.value = 'FARMÁCIA';
-                adjustSectorWidth(sectorInput);
+                renderSectorsSelect('FARMÁCIA');
             }
         }
     });
@@ -344,9 +360,7 @@
     function renderButtons(category) {
         const container = document.getElementById(`group-${category}`);
         container.innerHTML = '';
-        
         optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
-
         optionsData[category].forEach(opt => {
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -382,40 +396,57 @@
     document.getElementById('itemForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('itemName').value.trim();
-        const sectorInput = document.getElementById('itemSector');
-        const sector = sectorInput.value.trim().toUpperCase();
+        const select = document.getElementById('itemSector');
+        const sector = select.value;
 
-        if (!name || !sector) return;
-
-        // Se o usuário digitou um setor novo direto no input sem usar o botão, adiciona ele à lista também
-        if (!sectorsList.includes(sector)) {
-            sectorsList.push(sector);
-            localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
-            renderSectorsDatalist();
+        if (!name || !sector || sector === "__ADD_NEW__") {
+            alert("Por favor, selecione um setor válido.");
+            return;
         }
 
+        const wikiImageUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=100&origin=*`;
+
+        fetch(wikiImageUrl)
+            .then(res => res.json())
+            .then(data => {
+                let imageUrl = "https://via.placeholder.com/45?text=Item";
+                const pages = data.query && data.query.pages;
+                if (pages) {
+                    const pageId = Object.keys(pages)[0];
+                    if (pages[pageId] && pages[pageId].thumbnail) {
+                        imageUrl = pages[pageId].thumbnail.source;
+                    }
+                }
+                saveItemWithImage(name, sector, imageUrl);
+            })
+            .catch(() => {
+                saveItemWithImage(name, sector, "https://via.placeholder.com/45?text=Item");
+            });
+    });
+
+    function saveItemWithImage(name, sector, imageUrl) {
         const newItem = {
             id: Date.now(),
             name: name,
             sector: sector,
             unidade: selectedValues.unidades,
             cor: selectedValues.cores,
-            outro: selectedValues.outros
+            outro: selectedValues.outros,
+            image: imageUrl
         };
 
         itemsList.push(newItem);
         localStorage.setItem('itemsList', JSON.stringify(itemsList));
 
         document.getElementById('itemName').value = '';
-        sectorInput.value = '';
-        adjustSectorWidth(sectorInput);
+        renderSectorsSelect();
         selectedValues = { unidades: "", cores: "", outros: "" };
         
         renderButtons('unidades');
         renderButtons('cores');
         renderButtons('outros');
         renderItems();
-    });
+    }
 
     function renderItems() {
         const container = document.getElementById('listsContainer');
@@ -434,15 +465,18 @@
             let html = `<div class="sector-title">${sectorName}</div>`;
             
             items.forEach(item => {
-                const details = [item.unidade, item.cor, item.outro].filter(Boolean).join(' | ');
+                const characteristics = [item.unidade, item.cor, item.outro].filter(Boolean).join(' • ');
                 const searchQuery = encodeURIComponent(`"${item.name}"`);
                 const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
 
                 html += `
                     <div class="item-card">
-                        <div>
-                            <div class="item-info"><strong>${item.name}</strong></div>
-                            <div class="item-details">${details ? 'Detalhes: ' + details : ''}</div>
+                        <div class="item-left">
+                            <img src="${item.image}" alt="${item.name}" class="item-image">
+                            <div>
+                                ${characteristics ? `<div class="item-characteristics">${characteristics}</div>` : ''}
+                                <div class="item-info"><strong>${item.name}</strong></div>
+                            </div>
                         </div>
                         <a href="${searchUrl}" target="_blank" class="btn-search">Buscar</a>
                     </div>
@@ -455,12 +489,11 @@
     }
 
     // Inicialização
-    renderSectorsDatalist();
+    renderSectorsSelect();
     renderButtons('unidades');
     renderButtons('cores');
     renderButtons('outros');
     renderItems();
-    adjustSectorWidth(document.getElementById('itemSector'));
 </script>
 
 </body>
