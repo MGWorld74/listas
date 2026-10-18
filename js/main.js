@@ -1,8 +1,10 @@
 import { ICONS, KEYWORDS } from './config.js';
-import { load, save, exportJSON, importJSON } from './storage.js';
-import { render } from './render.js';
+import { load, save } from './storage.js';
+import { render, renderResults, renderList, updateTotals } from './render.js';
+import { exportXlsx } from './export.js';
 
-let st = load(); let editing = null; let color = null;
+let st = load(); let editing = null; let color = null; let listMode = false; let searches = [];
+st.list = st.list || { ids: [], prices: {}, store: '' };
 const $ = id => document.getElementById(id);
 const NEW = '__new__';
 const slug = n => n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'setor';
@@ -64,7 +66,12 @@ document.querySelector('.colorfield').oncontextmenu = async e => {
   if (st.colors.some(c => c.name.toLowerCase() === n.name.toLowerCase())) return alert('Essa cor já existe.');
   st.colors.push({ name: n.name, hex: n.color }); save(st); fillColors(n.name);
 };
-const refresh = () => render(st, $('filter').value, { toggle, edit, remove });
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const refresh = () => {
+  render(st, listMode, { toggle, edit, remove, select });
+  renderResults(st, searches, norm);
+  if (listMode) renderList(st, { price });
+};
 
 $('itemSector').onchange = async e => {
   if (e.target.value !== NEW) return;
@@ -78,7 +85,6 @@ $('itemUnit').onchange = async e => {
   const n = await ask('unit');
   if (n && !st.units.includes(n.name)) { st.units.push(n.name); save(st); fillSelects(undefined, n.name); } else fillSelects(undefined, '');
 };
-$('newSector').onclick = () => { $('itemSector').value = NEW; $('itemSector').onchange({ target: $('itemSector') }); };
 $('itemName').oninput = e => {
   const v = e.target.value.toLowerCase();
   for (const [id, words] of Object.entries(KEYWORDS))
@@ -112,14 +118,28 @@ function edit(id) {
 function toggle(id) { const it = st.items.find(i => i.id === id); it.done = !it.done; save(st); refresh(); }
 function remove(id) { if (confirm('Excluir este item?')) { st.items = st.items.filter(i => i.id !== id); save(st); refresh(); } }
 
-// ---------- Backup e filtro ----------
-$('filter').oninput = refresh;
-$('exportBtn').onclick = () => exportJSON(st);
-$('importBtn').onclick = () => $('importFile').click();
-$('importFile').onchange = async e => {
-  try { if (confirm('Substituir os dados atuais pelo backup?')) { st = await importJSON(e.target.files[0]); save(st); resetForm(); refresh(); } }
-  catch { alert('Arquivo de backup inválido.'); }
-  e.target.value = '';
+// ---------- Busca entre setores ----------
+$('searchForm').onsubmit = e => {
+  e.preventDefault();
+  $('q').value.split(/[,;]/).map(t => t.trim()).filter(Boolean)
+    .forEach(t => { if (!searches.some(x => norm(x) === norm(t))) searches.push(t); });
+  $('q').value = ''; refresh();
+};
+$('clearSearch').onclick = () => { searches = []; $('q').value = ''; refresh(); };
+
+// ---------- Criar lista ----------
+$('listMode').onclick = () => {
+  listMode = !listMode;
+  $('listMode').setAttribute('aria-pressed', listMode); $('listMode').classList.toggle('active', listMode);
+  $('listPanel').hidden = !listMode; $('storeName').value = st.list.store; refresh();
+};
+function select(id) { const a = st.list.ids, i = a.indexOf(id); if (i < 0) a.push(id); else a.splice(i, 1); save(st); refresh(); }
+function price(id, v) { st.list.prices[id] = v; save(st); updateTotals(st); }
+$('storeName').oninput = e => { st.list.store = e.target.value; save(st); };
+$('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list.ids = []; st.list.prices = {}; save(st); refresh(); } };
+$('printBtn').onclick = () => window.print();
+$('xlsxBtn').onclick = async () => {
+  try { await exportXlsx(st); } catch { alert('Não foi possível gerar o .xlsx. Verifique a conexão com a internet.'); }
 };
 
 fillSelects('', ''); fillColors(''); refresh();
