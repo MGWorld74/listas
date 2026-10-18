@@ -23,7 +23,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: var(--card-bg);
             padding: 30px;
@@ -39,8 +39,9 @@
         .form-row {
             display: flex;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             align-items: flex-end;
+            flex-wrap: wrap;
         }
 
         .form-group {
@@ -48,89 +49,50 @@
             flex-direction: column;
         }
 
-        .form-group.item-group {
-            flex: 2;
-        }
-
-        .form-group.sector-group {
-            flex: 1;
-        }
-
         label {
             margin-bottom: 6px;
             font-weight: bold;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
-        input[type="text"], select {
+        input[type="text"], select, input[type="number"] {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 1rem;
             box-sizing: border-box;
-            width: 100%;
-        }
-
-        /* Tamanho fixo baseado no texto "Selecione o Setor..." */
-        #itemSector {
-            width: 190px;
             background-color: white;
+        }
+
+        /* Tamanhos fixos baseados nos textos padrão */
+        #itemName {
+            flex: 2;
+            min-width: 220px;
+        }
+
+        #itemSector {
+            width: 195px;
             cursor: pointer;
         }
 
-        .selection-section {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .selection-section h3 {
-            margin-top: 0;
-            font-size: 1rem;
-            color: #4b5563;
-        }
-
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .choice-btn {
-            background: #e5e7eb;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
+        #itemUnidade {
+            width: 215px;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
         }
 
-        .choice-btn:hover {
-            background: #d1d5db;
+        #itemQuantidade {
+            width: 90px;
+            text-align: center;
         }
 
-        .choice-btn.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .add-option-btn {
-            background: transparent;
-            border: 2px dashed var(--primary-color);
-            color: var(--primary-color);
-            padding: 6px 12px;
-            border-radius: 20px;
+        #itemCor {
+            width: 175px;
             cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: bold;
         }
 
-        .add-option-btn:hover {
-            background: #e0e7ff;
+        #itemOutro {
+            width: 175px;
+            cursor: pointer;
         }
 
         .btn-submit {
@@ -144,6 +106,7 @@
             width: 100%;
             font-weight: bold;
             transition: background 0.2s;
+            margin-top: 15px;
         }
 
         .btn-submit:hover {
@@ -224,39 +187,48 @@
     <h1>Minhas Listas por Setores</h1>
 
     <form id="itemForm">
+        <!-- Linha 1: Item e Setor -->
         <div class="form-row">
-            <div class="form-group item-group">
+            <div class="form-group">
                 <label for="itemName">Nome do Item:</label>
-                <input type="text" id="itemName" placeholder="Ex: Ibuprofeno, Arroz, Caneta..." required>
+                <input type="text" id="itemName" placeholder="Ex: Ibuprofeno, Arroz..." required>
             </div>
 
-            <div class="form-group sector-group">
+            <div class="form-group">
                 <label for="itemSector">Setor:</label>
-                <select id="itemSector" required onchange="handleSectorChange(this)">
+                <select id="itemSector" required onchange="handleSelectChange('sector', this)">
                     <option value="" disabled selected>Selecione o Setor...</option>
                 </select>
             </div>
         </div>
 
-        <!-- Grupo: Unidades de Medida -->
-        <div class="selection-section">
-            <h3>Unidade de Medida / Tipo</h3>
-            <div class="button-group" id="group-unidades"></div>
-            <button type="button" class="add-option-btn" onclick="addNewOption('unidades')">+ Adicionar Unidade</button>
-        </div>
+        <!-- Linha 2: Unidade, Quantidade, Cor e Outros (Todos lado a lado) -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="itemUnidade">Unidade / Tipo:</label>
+                <select id="itemUnidade" onchange="handleSelectChange('unidade', this)">
+                    <option value="" disabled selected>Selecione a Unidade...</option>
+                </select>
+            </div>
 
-        <!-- Grupo: Cores -->
-        <div class="selection-section">
-            <h3>Cores</h3>
-            <div class="button-group" id="group-cores"></div>
-            <button type="button" class="add-option-btn" onclick="addNewOption('cores')">+ Adicionar Cor</button>
-        </div>
+            <div class="form-group">
+                <label for="itemQuantidade">Qtd (Max 4):</label>
+                <input type="text" id="itemQuantidade" maxlength="4" placeholder="0" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
 
-        <!-- Grupo: Outros -->
-        <div class="selection-section">
-            <h3>Outros</h3>
-            <div class="button-group" id="group-outros"></div>
-            <button type="button" class="add-option-btn" onclick="addNewOption('outros')">+ Adicionar Outro</button>
+            <div class="form-group">
+                <label for="itemCor">Cor:</label>
+                <select id="itemCor" onchange="handleSelectChange('cor', this)">
+                    <option value="" disabled selected>Selecione a Cor...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="itemOutro">Outro:</label>
+                <select id="itemOutro" onchange="handleSelectChange('outro', this)">
+                    <option value="" disabled selected>Outra opção...</option>
+                </select>
+            </div>
         </div>
 
         <button type="submit" class="btn-submit">Adicionar Item</button>
@@ -266,32 +238,29 @@
 </div>
 
 <script>
-    let optionsData = JSON.parse(localStorage.getItem('optionsData')) || {
-        unidades: ["gramas", "comprimidos", "Kg.", "comprimento", "tamanho", "Lt.", "cm.", "metro(s)"],
-        cores: ["Branco", "Preto", "Azul", "Vermelho"],
-        outros: ["Padrão", "Especial"]
-    };
-
+    // Dados iniciais salvos no LocalStorage
     let sectorsList = JSON.parse(localStorage.getItem('sectorsList')) || ["FARMÁCIA", "MERCADO", "ESCRITÓRIO"];
+    
+    let unidadesList = JSON.parse(localStorage.getItem('unidadesList')) || ["gramas", "comprimidos", "Kg.", "comprimento", "tamanho", "Lt.", "cm.", "metro(s)"];
+    
+    let coresList = JSON.parse(localStorage.getItem('coresList')) || ["Branco", "Preto", "Azul", "Vermelho", "Amarelo", "Verde", "Rosa", "Cinza", "Laranja", "Roxo"];
+    
+    let outrosList = JSON.parse(localStorage.getItem('outrosList')) || ["Padrão", "Especial"];
+
     let itemsList = JSON.parse(localStorage.getItem('itemsList')) || [];
 
-    let selectedValues = {
-        unidades: "",
-        cores: "",
-        outros: ""
-    };
-
-    function renderSectorsSelect(selectedVal = "") {
-        const select = document.getElementById('itemSector');
-        select.innerHTML = '<option value="" disabled>Selecione o Setor...</option>';
+    // Preenche os Selects mantendo ordem alfabética
+    function populateSelect(selectId, list, defaultText, selectedVal = "") {
+        const select = document.getElementById(selectId);
+        select.innerHTML = `<option value="" disabled>${defaultText}</option>`;
         
-        sectorsList.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+        list.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 
-        sectorsList.forEach(sector => {
+        list.forEach(item => {
             const option = document.createElement('option');
-            option.value = sector;
-            option.textContent = sector;
-            if (sector === selectedVal) {
+            option.value = item;
+            option.textContent = item;
+            if (item === selectedVal) {
                 option.selected = true;
             }
             select.appendChild(option);
@@ -299,7 +268,7 @@
 
         const addOption = document.createElement('option');
         addOption.value = "__ADD_NEW__";
-        addOption.textContent = "+ Adicionar Setor...";
+        addOption.textContent = "+ Adicionar...";
         select.appendChild(addOption);
 
         if (!selectedVal) {
@@ -307,81 +276,76 @@
         }
     }
 
-    function handleSectorChange(select) {
+    function refreshAllSelects() {
+        populateSelect('itemSector', sectorsList, "Selecione o Setor...");
+        populateSelect('itemUnidade', unidadesList, "Selecione a Unidade...");
+        populateSelect('itemCor', coresList, "Selecione a Cor...");
+        populateSelect('itemOutro', outrosList, "Outra opção...");
+    }
+
+    // Gerencia a inclusão dinâmica via prompt quando clica em "+ Adicionar..."
+    function handleSelectChange(type, select) {
         if (select.value === "__ADD_NEW__") {
-            const novo = prompt("Digite o nome do novo Setor:");
+            const nomeTipo = type === 'sector' ? 'Setor' : type === 'unidade' ? 'Unidade' : type === 'cor' ? 'Cor' : 'Outro';
+            const novo = prompt(`Digite o nome da nova ${nomeTipo}:`);
+            
             if (novo && novo.trim() !== "") {
-                const trimmed = novo.trim().toUpperCase();
-                if (!sectorsList.includes(trimmed)) {
-                    sectorsList.push(trimmed);
-                    localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
-                    renderSectorsSelect(trimmed);
+                const trimmed = novo.trim();
+                const formatted = type === 'sector' ? trimmed.toUpperCase() : trimmed;
+                
+                let targetList = type === 'sector' ? sectorsList : type === 'unidade' ? unidadesList : type === 'cor' ? coresList : outrosList;
+                let storageKey = type === 'sector' ? 'sectorsList' : type === 'unidade' ? 'unidadesList' : type === 'cor' ? 'coresList' : 'outrosList';
+
+                if (!targetList.includes(formatted)) {
+                    targetList.push(formatted);
+                    localStorage.setItem(storageKey, JSON.stringify(targetList));
+                    refreshAllSelects();
+                    select.value = formatted; // Seleciona o recém-criado
                 } else {
-                    alert("Este setor já existe!");
-                    renderSectorsSelect();
+                    alert("Esta opção já existe!");
+                    refreshAllSelects();
                 }
             } else {
-                renderSectorsSelect();
+                refreshAllSelects();
             }
         }
     }
 
+    // Sugestão automática de setor
     document.getElementById('itemName').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
         if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
             if (sectorsList.includes('FARMÁCIA')) {
-                renderSectorsSelect('FARMÁCIA');
+                document.getElementById('itemSector').value = 'FARMÁCIA';
             }
         }
     });
 
-    function renderButtons(category) {
-        const container = document.getElementById(`group-${category}`);
-        container.innerHTML = '';
-        optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
-        optionsData[category].forEach(opt => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = `choice-btn ${selectedValues[category] === opt ? 'active' : ''}`;
-            btn.textContent = opt;
-            btn.onclick = () => {
-                if (selectedValues[category] === opt) {
-                    selectedValues[category] = "";
-                } else {
-                    selectedValues[category] = opt;
-                }
-                renderButtons(category);
-            };
-            container.appendChild(btn);
-        });
-    }
-
-    function addNewOption(category) {
-        const nova = prompt(`Digite a nova opção para ${category.toUpperCase()}:`);
-        if (nova && nova.trim() !== "") {
-            const trimmed = nova.trim();
-            if (!optionsData[category].includes(trimmed)) {
-                optionsData[category].push(trimmed);
-                optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
-                localStorage.setItem('optionsData', JSON.stringify(optionsData));
-                renderButtons(category);
-            } else {
-                alert("Esta opção já existe!");
-            }
-        }
-    }
-
+    // Envio do formulário
     document.getElementById('itemForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('itemName').value.trim();
-        const select = document.getElementById('itemSector');
-        const sector = select.value;
+        const sector = document.getElementById('itemSector').value;
+        const unidade = document.getElementById('itemUnidade').value;
+        const quantidade = document.getElementById('itemQuantidade').value.trim();
+        const cor = document.getElementById('itemCor').value;
+        const outro = document.getElementById('itemOutro').value;
 
         if (!name || !sector || sector === "__ADD_NEW__") {
-            alert("Por favor, selecione um setor válido.");
+            alert("Por favor, preencha o nome e selecione um setor válido.");
             return;
         }
 
+        // Monta a string de características unindo unidade, quantidade, cor e outro
+        const rawCharacteristics = [
+            unidade && unidade !== "__ADD_NEW__" ? unidade : "",
+            quantidade ? `Qtd: ${quantidade}` : "",
+            cor && cor !== "__ADD_NEW__" ? cor : "",
+            outro && outro !== "__ADD_NEW__" ? outro : ""
+        ];
+        const characteristicsText = rawCharacteristics.filter(Boolean).join(' • ');
+
+        // Busca imagem automática via Wikimedia
         const wikiImageUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=100&origin=*`;
 
         fetch(wikiImageUrl)
@@ -395,34 +359,29 @@
                         imageUrl = pages[pageId].thumbnail.source;
                     }
                 }
-                saveItemWithImage(name, sector, imageUrl);
+                saveItem(name, sector, characteristicsText, imageUrl);
             })
             .catch(() => {
-                saveItemWithImage(name, sector, "https://via.placeholder.com/45?text=Item");
+                saveItem(name, sector, characteristicsText, "https://via.placeholder.com/45?text=Item");
             });
     });
 
-    function saveItemWithImage(name, sector, imageUrl) {
+    function saveItem(name, sector, characteristics, imageUrl) {
         const newItem = {
             id: Date.now(),
             name: name,
             sector: sector,
-            unidade: selectedValues.unidades,
-            cor: selectedValues.cores,
-            outro: selectedValues.outros,
+            characteristics: characteristics,
             image: imageUrl
         };
 
         itemsList.push(newItem);
         localStorage.setItem('itemsList', JSON.stringify(itemsList));
 
+        // Limpa campos
         document.getElementById('itemName').value = '';
-        renderSectorsSelect();
-        selectedValues = { unidades: "", cores: "", outros: "" };
-        
-        renderButtons('unidades');
-        renderButtons('cores');
-        renderButtons('outros');
+        document.getElementById('itemQuantidade').value = '';
+        refreshAllSelects();
         renderItems();
     }
 
@@ -443,7 +402,6 @@
             let html = `<div class="sector-title">${sectorName}</div>`;
             
             items.forEach(item => {
-                const characteristics = [item.unidade, item.cor, item.outro].filter(Boolean).join(' • ');
                 const searchQuery = encodeURIComponent(`"${item.name}"`);
                 const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
 
@@ -452,7 +410,7 @@
                         <div class="item-left">
                             <img src="${item.image}" alt="${item.name}" class="item-image">
                             <div>
-                                ${characteristics ? `<div class="item-characteristics">${characteristics}</div>` : ''}
+                                ${item.characteristics ? `<div class="item-characteristics">${item.characteristics}</div>` : ''}
                                 <div class="item-info"><strong>${item.name}</strong></div>
                             </div>
                         </div>
@@ -466,11 +424,8 @@
         }
     }
 
-    // Inicialização
-    renderSectorsSelect();
-    renderButtons('unidades');
-    renderButtons('cores');
-    renderButtons('outros');
+    // Inicialização da página
+    refreshAllSelects();
     renderItems();
 </script>
 
