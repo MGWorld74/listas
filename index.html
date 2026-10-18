@@ -47,7 +47,6 @@
   <form id="searchForm" class="toolbar">
     <input type="search" id="q" placeholder="Buscar item" aria-label="Buscar item">
     <button type="submit" class="btn">Buscar</button>
-    <button type="button" id="clearSearch" class="btn">Limpar</button>
     <button type="button" id="listMode" class="btn" aria-pressed="false">Criar lista</button>
   </form>
 
@@ -56,10 +55,6 @@
   <section id="listPanel" class="panel" hidden>
     <h2>Minha lista</h2>
     <p id="listDate" class="printonly"></p>
-    <div class="field">
-      <label for="storeName">Loja / Mercado:</label>
-      <input type="text" id="storeName" maxlength="60" placeholder="Ex.: Supermercado Central">
-    </div>
     <div id="listBody"></div>
     <p id="listTotal" class="total"></p>
     <div class="row noprint">
