@@ -8,7 +8,6 @@ Site estático (HTML + CSS + JS) para organizar itens por setor. Dados salvos no
 - `js/config.js` – setores, unidades, cores e palavras-chave padrão
 - `js/storage.js` – salvar, migrar dados antigos, exportar/importar
 - `js/render.js` – desenho dos setores e itens
-- `js/images.js` – busca de miniatura
 - `js/main.js` – eventos e lógica
 
 ## Rodar localmente
