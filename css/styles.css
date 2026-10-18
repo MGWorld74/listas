@@ -49,3 +49,10 @@ dialog menu{display:flex;gap:10px;justify-content:flex-end;padding:0;margin:14px
 .icons span{display:block;padding:4px;border-radius:8px}
 .icons input:checked+span{background:var(--primary)}
 .colorsel{display:flex;gap:8px;align-items:center}.colorsel select{flex:1}
+.colorfield{position:relative}
+.colorbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font:inherit;cursor:pointer;min-height:42px}
+.colorlist{position:absolute;top:100%;left:0;z-index:20;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;padding:10px;width:max-content;max-width:260px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.colorlist[hidden]{display:none}
+button.dot{padding:0;cursor:pointer}
+.colorlist .dot:hover{transform:scale(1.15)}
+.colorlist .dot.sel{outline:3px solid var(--primary);outline-offset:2px}
