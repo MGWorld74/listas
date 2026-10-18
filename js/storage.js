@@ -23,8 +23,7 @@ function migrate() {
   (old('unidadesList') || []).forEach(u => { if (!st.units.includes(u)) st.units.push(u); });
   (old('itemsList') || []).forEach(o => st.items.push({
     id: o.id, name: o.name, sectorId: addSector(o.sector).id, qty: '', unit: '', color: null,
-    notes: o.characteristics || '', done: false,
-    image: o.image && !o.image.includes('placeholder') ? o.image : ''
+    notes: o.characteristics || '', done: false
   }));
   return st;
 }

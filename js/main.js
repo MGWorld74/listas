@@ -1,7 +1,6 @@
 import { ICONS, KEYWORDS } from './config.js';
 import { load, save, exportJSON, importJSON } from './storage.js';
 import { render } from './render.js';
-import { findImage } from './images.js';
 
 let st = load(); let editing = null; let color = null;
 const $ = id => document.getElementById(id);
@@ -40,22 +39,31 @@ function fillSelects(sector = $('itemSector').value, unit = $('itemUnit').value)
   fillSelect('itemSector', st.sectors.map(s => ({ v: s.id, t: `${s.icon} ${s.name}` })), 'Selecione o setor...', sector);
   fillSelect('itemUnit', st.units.map(u => ({ v: u, t: u })), 'Selecione a unidade...', unit);
 }
-function renderColors() {
-  const box = $('colors'); box.replaceChildren();
-  const mk = (value, title, bg, txt) => {
-    const l = document.createElement('label'), r = document.createElement('input'), d = document.createElement('span');
-    r.type = 'radio'; r.name = 'cor'; r.value = value; r.checked = (color ? color.name : '') === value;
-    l.title = title; d.className = 'dot'; d.style.setProperty('--c', bg || 'transparent'); d.textContent = txt || '';
-    r.setAttribute('aria-label', title);
-    r.onchange = () => { color = st.colors.find(c => c.name === value) || null; };
-    l.append(r, d); box.append(l);
+function fillColors(value = '') {
+  const s = $('itemColor'); s.replaceChildren();
+  const add = (v, t, hex) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t;
+    if (hex) { // fundo na cor escolhida e texto com bom contraste
+      const n = parseInt(hex.slice(1), 16), lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+      o.style.backgroundColor = hex; o.style.color = lum > 150 ? '#111' : '#fff';
+    }
+    s.append(o);
   };
-  mk('', 'Sem cor', '', '✕');
-  st.colors.forEach(c => mk(c.name, c.name, c.hex));
-  const plus = document.createElement('button'); plus.type = 'button'; plus.className = 'dot'; plus.textContent = '+'; plus.title = 'Adicionar cor';
-  plus.onclick = async () => { const n = await ask('color'); if (n && !st.colors.some(c => c.name === n.name)) { st.colors.push({ name: n.name, hex: n.color }); color = st.colors.at(-1); save(st); renderColors(); } };
-  box.append(plus);
+  add('', 'Sem cor');
+  st.colors.forEach(c => add(c.name, c.name, c.hex));
+  add(NEW, '+ Nova cor...');
+  s.value = value; color = st.colors.find(c => c.name === value) || null; updateDot();
 }
+const updateDot = () => $('colorDot').style.setProperty('--c', color ? color.hex : 'transparent');
+$('itemColor').onchange = async e => {
+  if (e.target.value === NEW) {
+    const n = await ask('color');
+    if (n && !st.colors.some(c => c.name === n.name)) { st.colors.push({ name: n.name, hex: n.color }); save(st); fillColors(n.name); }
+    else fillColors(color ? color.name : '');
+    return;
+  }
+  color = st.colors.find(c => c.name === e.target.value) || null; updateDot();
+};
 const refresh = () => render(st, $('filter').value, { toggle, edit, remove });
 
 $('itemSector').onchange = async e => {
@@ -86,20 +94,19 @@ $('itemForm').onsubmit = e => {
   const data = { name: $('itemName').value.trim(), sectorId, qty: $('itemQty').value, unit, color, notes: $('itemNotes').value.trim() };
   if (editing) { Object.assign(st.items.find(i => i.id === editing), data); }
   else {
-    const it = { id: Date.now(), done: false, image: '', ...data }; st.items.push(it);
-    findImage(it.name).then(img => { if (img) { it.image = img; save(st); refresh(); } });
+    st.items.push({ id: Date.now(), done: false, ...data });
   }
   save(st); resetForm(); refresh();
 };
 function resetForm() {
   editing = null; color = null; $('itemName').value = ''; $('itemQty').value = ''; $('itemNotes').value = '';
-  $('submitBtn').textContent = 'Adicionar item'; $('cancelEdit').hidden = true; fillSelects(undefined, ''); renderColors();
+  $('submitBtn').textContent = 'Adicionar item'; $('cancelEdit').hidden = true; fillSelects(undefined, ''); fillColors('');
 }
 $('cancelEdit').onclick = resetForm;
 function edit(id) {
   const it = st.items.find(i => i.id === id); editing = id; color = it.color;
   $('itemName').value = it.name; $('itemQty').value = it.qty; $('itemNotes').value = it.notes;
-  fillSelects(it.sectorId, it.unit); renderColors();
+  fillSelects(it.sectorId, it.unit); fillColors(it.color ? it.color.name : '');
   $('submitBtn').textContent = 'Salvar alterações'; $('cancelEdit').hidden = false; $('itemName').focus(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 function toggle(id) { const it = st.items.find(i => i.id === id); it.done = !it.done; save(st); refresh(); }
@@ -115,4 +122,4 @@ $('importFile').onchange = async e => {
   e.target.value = '';
 };
 
-fillSelects('', ''); renderColors(); refresh();
+fillSelects('', ''); fillColors(''); refresh();

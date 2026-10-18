@@ -21,9 +21,6 @@ function itemCard(it, sec, cb) {
   const row = el('div', 'item' + (it.done ? ' done' : ''));
   const chk = el('input'); chk.type = 'checkbox'; chk.checked = it.done; chk.style.width = 'auto';
   chk.setAttribute('aria-label', 'Concluído'); chk.onchange = () => cb.toggle(it.id);
-  let pic;
-  if (it.image) { pic = el('img', 'thumb'); pic.src = it.image; pic.alt = ''; pic.loading = 'lazy'; pic.onerror = () => pic.replaceWith(el('span', 'logo', sec.icon)); }
-  else pic = el('span', 'logo', sec.icon);
   const body = el('div', 'body');
   const info = [it.qty, it.unit].filter(Boolean).join(' ');
   if (info || it.color) {
@@ -39,6 +36,6 @@ function itemCard(it, sec, cb) {
   const ed = el('button', '', '✏️'); ed.title = 'Editar'; ed.onclick = () => cb.edit(it.id);
   const del = el('button', '', '🗑️'); del.title = 'Excluir'; del.onclick = () => cb.remove(it.id);
   acts.append(a, ed, del);
-  row.append(chk, pic, body, acts);
+  row.append(chk, body, acts);
   return row;
 }
