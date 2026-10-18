@@ -40,29 +40,29 @@ function fillSelects(sector = $('itemSector').value, unit = $('itemUnit').value)
   fillSelect('itemUnit', st.units.map(u => ({ v: u, t: u })), 'Selecione a unidade...', unit);
 }
 function fillColors(value = '') {
-  const s = $('itemColor'); s.replaceChildren();
-  const add = (v, t, hex) => {
-    const o = document.createElement('option'); o.value = v; o.textContent = t;
-    if (hex) { // fundo na cor escolhida e texto com bom contraste
-      const n = parseInt(hex.slice(1), 16), lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
-      o.style.backgroundColor = hex; o.style.color = lum > 150 ? '#111' : '#fff';
-    }
-    s.append(o);
-  };
-  add('', 'Sem cor');
-  st.colors.forEach(c => add(c.name, c.name, c.hex));
-  add(NEW, '+ Nova cor...');
-  s.value = value; color = st.colors.find(c => c.name === value) || null; updateDot();
+  color = st.colors.find(c => c.name === value) || null;
+  const list = $('colorList'); list.replaceChildren();
+  [null, ...st.colors].forEach(c => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'dot' + (c === color ? ' sel' : '');
+    b.setAttribute('role', 'option'); b.setAttribute('aria-selected', c === color);
+    b.title = c ? c.name : 'Sem cor'; b.setAttribute('aria-label', b.title);
+    if (c) b.style.setProperty('--c', c.hex); else b.textContent = '✕';
+    b.onclick = () => { fillColors(c ? c.name : ''); closeColors(); };
+    list.append(b);
+  });
+  $('colorDot').style.setProperty('--c', color ? color.hex : 'transparent');
+  $('colorDot').textContent = color ? '' : '✕';
+  $('colorBtn').title = (color ? color.name + ' - ' : '') + 'Clique para escolher; botão direito para adicionar cor';
 }
-const updateDot = () => $('colorDot').style.setProperty('--c', color ? color.hex : 'transparent');
-$('itemColor').onchange = async e => {
-  if (e.target.value === NEW) {
-    const n = await ask('color');
-    if (n && !st.colors.some(c => c.name === n.name)) { st.colors.push({ name: n.name, hex: n.color }); save(st); fillColors(n.name); }
-    else fillColors(color ? color.name : '');
-    return;
-  }
-  color = st.colors.find(c => c.name === e.target.value) || null; updateDot();
+function closeColors() { $('colorList').hidden = true; $('colorBtn').setAttribute('aria-expanded', 'false'); }
+$('colorBtn').onclick = () => { const h = !$('colorList').hidden; closeColors(); if (!h) { $('colorList').hidden = false; $('colorBtn').setAttribute('aria-expanded', 'true'); } };
+document.addEventListener('click', e => { if (!e.target.closest('.colorfield')) closeColors(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeColors(); });
+document.querySelector('.colorfield').oncontextmenu = async e => {
+  e.preventDefault(); closeColors();
+  const n = await ask('color'); if (!n) return;
+  if (st.colors.some(c => c.name.toLowerCase() === n.name.toLowerCase())) return alert('Essa cor já existe.');
+  st.colors.push({ name: n.name, hex: n.color }); save(st); fillColors(n.name);
 };
 const refresh = () => render(st, $('filter').value, { toggle, edit, remove });
 
