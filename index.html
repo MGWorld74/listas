@@ -28,9 +28,10 @@
         <label for="itemUnit">Unidade / Tipo:</label>
         <select id="itemUnit"></select>
       </div>
-      <div class="field grow">
-        <label for="itemColor">Cor:</label>
-        <div class="colorsel"><span id="colorDot" class="dot"></span><select id="itemColor"></select></div>
+      <div class="field grow colorfield">
+        <label for="colorBtn">Cor:</label>
+        <button type="button" id="colorBtn" class="colorbtn" aria-haspopup="listbox" aria-expanded="false"><span id="colorDot" class="dot"></span><span>▾</span></button>
+        <div id="colorList" class="colorlist" role="listbox" aria-label="Cores" hidden></div>
       </div>
     </div>
     <div class="field">
