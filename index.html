@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Listas por Setores</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #d1d5db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .selection-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .selection-section h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #4b5563;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .choice-btn {
+            background: #e5e7eb;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: #d1d5db;
+        }
+
+        .choice-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .add-option-btn {
+            background: transparent;
+            border: 2px dashed var(--primary-color);
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .add-option-btn:hover {
+            background: #e0e7ff;
+        }
+
+        .btn-submit {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-hover);
+        }
+
+        .sector-container {
+            margin-top: 30px;
+            border-top: 2px solid #e5e7eb;
+            padding-top: 20px;
+        }
+
+        .sector-title {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .item-card {
+            background: #fdfdfd;
+            border: 1px solid #e5e7eb;
+            padding: 12px 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .item-info {
+            font-size: 0.95rem;
+        }
+
+        .item-details {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .btn-search {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .btn-search:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Minhas Listas por Setores</h1>
+
+    <form id="itemForm">
+        <div class="form-group">
+            <label for="itemName">Nome do Item:</label>
+            <input type="text" id="itemName" placeholder="Ex: Ibuprofeno, Arroz, Caneta..." required>
+        </div>
+
+        <div class="form-group">
+            <label for="itemSector">Setor:</label>
+            <input type="text" id="itemSector" list="sectorList" placeholder="Ex: FARMÁCIA, MERCADO..." required>
+            <datalist id="sectorList">
+                <option value="FARMÁCIA">
+                <option value="MERCADO">
+                <option value="ESCRITÓRIO">
+            </datalist>
+        </div>
+
+        <!-- Grupo: Unidades de Medida -->
+        <div class="selection-section">
+            <h3>Unidade de Medida / Tipo</h3>
+            <div class="button-group" id="group-unidades">
+                <!-- Botões gerados via JS -->
+            </div>
+            <button type="button" class="add-option-btn" onclick="addNewOption('unidades')">+ Adicionar Unidade</button>
+        </div>
+
+        <!-- Grupo: Cores -->
+        <div class="selection-section">
+            <h3>Cores</h3>
+            <div class="button-group" id="group-cores">
+                <!-- Botões gerados via JS -->
+            </div>
+            <button type="button" class="add-option-btn" onclick="addNewOption('cores')">+ Adicionar Cor</button>
+        </div>
+
+        <!-- Grupo: Outros -->
+        <div class="selection-section">
+            <h3>Outros</h3>
+            <div class="button-group" id="group-outros">
+                <!-- Botões gerados via JS -->
+            </div>
+            <button type="button" class="add-option-btn" onclick="addNewOption('outros')">+ Adicionar Outro</button>
+        </div>
+
+        <button type="submit" class="btn-submit">Adicionar Item</button>
+    </form>
+
+    <div id="listsContainer">
+        <!-- As listas por setor aparecerão aqui dinamicamente -->
+    </div>
+</div>
+
+<script>
+    // Dados iniciais ou recuperados do LocalStorage
+    let optionsData = JSON.parse(localStorage.getItem('optionsData')) || {
+        unidades: ["gramas", "comprimidos", "Kg.", "comprimento", "tamanho", "Lt.", "cm.", "metro(s)"],
+        cores: ["Branco", "Preto", "Azul", "Vermelho"],
+        outros: ["Padrão", "Especial"]
+    };
+
+    let itemsList = JSON.parse(localStorage.getItem('itemsList')) || [];
+
+    // Variáveis para guardar as seleções ativas do formulário
+    let selectedValues = {
+        unidades: "",
+        cores: "",
+        outros: ""
+    };
+
+    // Sugestão automática de setor baseada no nome
+    document.getElementById('itemName').addEventListener('input', (e) => {
+        const val = e.target.value.toLowerCase();
+        const sectorInput = document.getElementById('itemSector');
+        if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
+            sectorInput.value = 'FARMÁCIA';
+        }
+    });
+
+    // Renderiza os botões dinâmicos ordenados alfabeticamente
+    function renderButtons(category) {
+        const container = document.getElementById(`group-${category}`);
+        container.innerHTML = '';
+        
+        // Ordena em ordem alfabética antes de exibir
+        optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+        optionsData[category].forEach(opt => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `choice-btn ${selectedValues[category] === opt ? 'active' : ''}`;
+            btn.textContent = opt;
+            btn.onclick = () => {
+                // Alterna seleção
+                if (selectedValues[category] === opt) {
+                    selectedValues[category] = "";
+                } else {
+                    selectedValues[category] = opt;
+                }
+                renderButtons(category);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    // Função para adicionar nova opção via prompt
+    function addNewOption(category) {
+        const nova = prompt(`Digite a nova opção para ${category.toUpperCase()}:`);
+        if (nova && nova.trim() !== "") {
+            const trimmed = nova.trim();
+            if (!optionsData[category].includes(trimmed)) {
+                optionsData[category].push(trimmed);
+                optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+                localStorage.setItem('optionsData', JSON.stringify(optionsData));
+                renderButtons(category);
+            } else {
+                alert("Esta opção já existe!");
+            }
+        }
+    }
+
+    // Submissão do formulário de item
+    document.getElementById('itemForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('itemName').value.trim();
+        const sector = document.getElementById('itemSector').value.trim().toUpperCase();
+
+        if (!name || !sector) return;
+
+        const newItem = {
+            id: Date.now(),
+            name: name,
+            sector: sector,
+            unidade: selectedValues.unidades,
+            cor: selectedValues.cores,
+            outro: selectedValues.outros
+        };
+
+        itemsList.push(newItem);
+        localStorage.setItem('itemsList', JSON.stringify(itemsList));
+
+        // Limpa campos
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemSector').value = '';
+        selectedValues = { unidades: "", cores: "", outros: "" };
+        
+        renderButtons('unidades');
+        renderButtons('cores');
+        renderButtons('outros');
+        renderItems();
+    });
+
+    // Renderiza a lista de itens agrupados por setores
+    function renderItems() {
+        const container = document.getElementById('listsContainer');
+        container.innerHTML = '';
+
+        // Agrupa por setor
+        const sectors = {};
+        itemsList.forEach(item => {
+            if (!sectors[item.sector]) sectors[item.sector] = [];
+            sectors[item.sector].push(item);
+        });
+
+        for (const [sectorName, items] of Object.entries(sectors)) {
+            const sectorDiv = document.createElement('div');
+            sectorDiv.className = 'sector-container';
+            
+            let html = `<div class="sector-title">${sectorName}</div>`;
+            
+            items.forEach(item => {
+                const details = [item.unidade, item.cor, item.outro].filter(Boolean).join(' | ');
+                // Busca entre aspas exatas
+                const searchQuery = encodeURIComponent(`"${item.name}"`);
+                const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
+
+                html += `
+                    <div class="item-card">
+                        <div>
+                            <div class="item-info"><strong>${item.name}</strong></div>
+                            <div class="item-details">${details ? 'Detalhes: ' + details : ''}</div>
+                        </div>
+                        <a href="${searchUrl}" target="_blank" class="btn-search">Buscar</a>
+                    </div>
+                `;
+            });
+
+            sectorDiv.innerHTML = html;
+            container.appendChild(sectorDiv);
+        }
+    }
+
+    // Inicialização da página
+    renderButtons('unidades');
+    renderButtons('cores');
+    renderButtons('outros');
+    renderItems();
+</script>
+
+</body>
+</html>
