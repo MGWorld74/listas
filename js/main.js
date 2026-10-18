@@ -4,7 +4,7 @@ import { render, renderResults, renderList, updateTotals } from './render.js';
 import { exportXlsx } from './export.js';
 
 let st = load(); let editing = null; let color = null; let listMode = false; let searches = [];
-st.list = st.list || { ids: [], prices: {}, store: '' };
+st.list = st.list || { ids: [], prices: {} }; st.list.stores = st.list.stores || {};
 const $ = id => document.getElementById(id);
 const NEW = '__new__';
 const slug = n => n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'setor';
@@ -70,7 +70,7 @@ const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '
 const refresh = () => {
   render(st, listMode, { toggle, edit, remove, select });
   renderResults(st, searches, norm);
-  if (listMode) renderList(st, { price });
+  if (listMode) renderList(st, { price, store });
 };
 
 $('itemSector').onchange = async e => {
@@ -125,18 +125,17 @@ $('searchForm').onsubmit = e => {
     .forEach(t => { if (!searches.some(x => norm(x) === norm(t))) searches.push(t); });
   $('q').value = ''; refresh();
 };
-$('clearSearch').onclick = () => { searches = []; $('q').value = ''; refresh(); };
 
 // ---------- Criar lista ----------
 $('listMode').onclick = () => {
   listMode = !listMode;
   $('listMode').setAttribute('aria-pressed', listMode); $('listMode').classList.toggle('active', listMode);
-  $('listPanel').hidden = !listMode; $('storeName').value = st.list.store; refresh();
+  $('listPanel').hidden = !listMode; refresh();
 };
 function select(id) { const a = st.list.ids, i = a.indexOf(id); if (i < 0) a.push(id); else a.splice(i, 1); save(st); refresh(); }
+function store(id, v) { st.list.stores[id] = v; save(st); }
 function price(id, v) { st.list.prices[id] = v; save(st); updateTotals(st); }
-$('storeName').oninput = e => { st.list.store = e.target.value; save(st); };
-$('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list.ids = []; st.list.prices = {}; save(st); refresh(); } };
+$('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list.ids = []; st.list.prices = {}; st.list.stores = {}; save(st); refresh(); } };
 $('printBtn').onclick = () => window.print();
 $('xlsxBtn').onclick = async () => {
   try { await exportXlsx(st); } catch { alert('Não foi possível gerar o .xlsx. Verifique a conexão com a internet.'); }

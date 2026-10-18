@@ -1,7 +1,9 @@
 // Usa textContent (nunca innerHTML) para evitar injeção de código.
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const money = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-export const info = it => [it.unit, it.qty ? 'Qtd: ' + it.qty : ''].filter(Boolean).join(' • ');
+const dot = c => { const d = el('span', 'dot sm'); d.style.setProperty('--c', c.hex); d.title = c.name; return d; };
+const nameEl = it => { const n = nameEl(it); if (it.color) n.append(dot(it.color)); return n; };
+export const info = it => [it.qty ? 'Qtd: ' + it.qty : '', it.unit].filter(Boolean).join(' • ');
 
 export function render(st, listMode, cb) {
   const box = document.getElementById('sectors'); box.replaceChildren();
@@ -23,12 +25,8 @@ function itemCard(it, st, listMode, cb) {
   if (listMode) { chk.checked = st.list.ids.includes(it.id); chk.setAttribute('aria-label', 'Incluir na lista'); chk.onchange = () => cb.select(it.id); }
   else { chk.checked = it.done; chk.setAttribute('aria-label', 'Concluído'); chk.onchange = () => cb.toggle(it.id); }
   const body = el('div', 'body');
-  body.append(el('div', 'name', it.name));
-  if (info(it) || it.color) {
-    const meta = el('div', 'meta');
-    if (it.color) { const d = el('span', 'dot'); d.style.setProperty('--c', it.color.hex); d.title = it.color.name; d.style.width = d.style.height = '12px'; meta.append(d); }
-    meta.append(el('span', '', info(it))); body.append(meta);
-  }
+  const nm = el('div', 'name', it.name); if (it.color) nm.append(dot(it.color)); body.append(nm);
+  if (info(it)) body.append(el('div', 'meta', info(it)));
   if (it.notes) body.append(el('div', 'notes', it.notes));
   const acts = el('div', 'acts');
   const a = el('a', '', '🔍'); a.href = 'https://www.google.com/search?q=' + encodeURIComponent('"' + it.name + '"');
@@ -49,7 +47,7 @@ export function renderResults(st, terms, norm) {
     if (!found.length) g.append(el('p', 'empty', 'Nenhum item encontrado.'));
     found.forEach(it => {
       const sec = st.sectors.find(s => s.id === it.sectorId) || { icon: '📁', name: '' };
-      const r = el('div', 'rrow'); r.append(el('span', 'rs', `${sec.icon} ${sec.name}`), el('strong', '', it.name));
+      const r = el('div', 'rrow'); r.append(el('span', 'rs', `${sec.icon} ${sec.name}`), nameEl(it));
       if (info(it)) r.append(el('span', 'notes', info(it)));
       g.append(r);
     });
@@ -66,17 +64,21 @@ export function renderList(st, cb) {
     const items = st.items.filter(i => i.sectorId === sec.id && st.list.ids.includes(i.id));
     if (!items.length) return;
     body.append(el('h3', 'list-sec', `${sec.icon} ${sec.name}`));
-    const t = el('table', 'ltable'), head = el('tr');
-    ['Item', 'Preço unit. (R$)', 'Subtotal'].forEach(x => head.append(el('th', '', x))); t.append(head);
+    const wrap = el('div', 'tscroll'), t = el('table', 'ltable'), head = el('tr');
+    ['Item', 'Preço unit. (R$)', 'Subtotal', 'Loja / Mercado', 'Observações'].forEach((x, i) => head.append(el('th', 'c' + (i + 1), x)));
+    t.append(head);
     items.forEach(it => {
-      n++; const tr = el('tr'), c1 = el('td'), c2 = el('td'), c3 = el('td', 'sub');
-      c1.append(el('strong', '', it.name)); if (info(it)) c1.append(el('div', 'notes', info(it)));
+      n++; const tr = el('tr'), c1 = el('td'), c2 = el('td'), c3 = el('td', 'sub'), c4 = el('td'), c5 = el('td', 'notes', it.notes || '');
+      c1.append(nameEl(it)); if (info(it)) c1.append(el('div', 'notes', info(it)));
       const inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.step = '0.01'; inp.placeholder = '0,00';
       inp.value = st.list.prices[it.id] || ''; inp.setAttribute('aria-label', 'Preço de ' + it.name);
       inp.oninput = () => cb.price(it.id, inp.value);
-      c2.append(inp); c3.dataset.id = it.id; tr.append(c1, c2, c3); t.append(tr);
+      const sto = el('input'); sto.type = 'text'; sto.maxLength = 60; sto.placeholder = 'Loja ou mercado';
+      sto.value = st.list.stores[it.id] || ''; sto.setAttribute('aria-label', 'Loja de ' + it.name);
+      sto.oninput = () => cb.store(it.id, sto.value);
+      c2.append(inp); c3.dataset.id = it.id; c4.append(sto); tr.append(c1, c2, c3, c4, c5); t.append(tr);
     });
-    body.append(t);
+    wrap.append(t); body.append(wrap);
   });
   if (!n) body.append(el('p', 'empty', 'Marque os itens nos setores para montar a lista.'));
   updateTotals(st);

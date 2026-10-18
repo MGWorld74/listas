@@ -9,14 +9,15 @@ export async function exportXlsx(st) {
   const rows = []; let total = 0;
   st.sectors.forEach(sec => st.items.filter(i => i.sectorId === sec.id && st.list.ids.includes(i.id)).forEach(it => {
     const p = Number(st.list.prices[it.id]) || 0, q = Number(it.qty) || 1, sub = p * q; total += sub;
-    rows.push([sec.name, it.name, info(it), it.qty ? Number(it.qty) : '', p || '', sub || '']);
+    rows.push([sec.name, it.name, it.color ? it.color.name : '', it.qty ? Number(it.qty) : '', it.unit || '', p || '', sub || '', st.list.stores[it.id] || '', it.notes || '']);
   }));
   if (!rows.length) return alert('Marque ao menos um item para a lista.');
   await loadLib();
-  const data = [['Loja / Mercado', st.list.store || ''], ['Data', new Date().toLocaleDateString('pt-BR')], [],
-    ['Setor', 'Item', 'Detalhes', 'Qtd.', 'Preço unit. (R$)', 'Subtotal (R$)'], ...rows, [], ['', '', '', '', 'Total (R$)', total]];
+  const data = [['Data', new Date().toLocaleDateString('pt-BR')], [],
+    ['Setor', 'Item', 'Cor', 'Qtd.', 'Unidade / Tipo', 'Preço unit. (R$)', 'Subtotal (R$)', 'Loja / Mercado', 'Observações'], ...rows,
+    [], ['', '', '', '', '', 'Total (R$)', total]];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{ wch: 16 }, { wch: 28 }, { wch: 26 }, { wch: 8 }, { wch: 16 }, { wch: 14 }];
+  ws['!cols'] = [16, 28, 12, 8, 16, 16, 14, 22, 32].map(wch => ({ wch }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista');
-  XLSX.writeFile(wb, `lista-${(st.list.store || 'compras').replace(/[^\w\-]+/g, '_')}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.writeFile(wb, `lista-compras-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
