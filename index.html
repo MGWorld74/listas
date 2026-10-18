@@ -71,10 +71,9 @@
             width: 100%;
         }
 
-        /* Ajusta o select para o tamanho do maior texto */
+        /* Tamanho fixo baseado no texto "Selecione o Setor..." */
         #itemSector {
-            width: auto;
-            min-width: 140px;
+            width: 190px;
             background-color: white;
             cursor: pointer;
         }
@@ -234,8 +233,7 @@
             <div class="form-group sector-group">
                 <label for="itemSector">Setor:</label>
                 <select id="itemSector" required onchange="handleSectorChange(this)">
-                    <option value="" disabled selected>Selecione...</option>
-                    <!-- Opções geradas via JS -->
+                    <option value="" disabled selected>Selecione o Setor...</option>
                 </select>
             </div>
         </div>
@@ -283,20 +281,6 @@
         outros: ""
     };
 
-    // Ajusta a largura do select para o tamanho do texto selecionado
-    function adjustSelectWidth(selectElement) {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            const text = selectedOption.text;
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            context.font = window.getComputedStyle(selectElement).font;
-            const width = context.measureText(text).width;
-            selectElement.style.width = Math.max(140, width + 50) + 'px';
-        }
-    }
-
-    // Renderiza as opções do select de setores em ordem alfabética + a opção de adicionar
     function renderSectorsSelect(selectedVal = "") {
         const select = document.getElementById('itemSector');
         select.innerHTML = '<option value="" disabled>Selecione o Setor...</option>';
@@ -313,7 +297,6 @@
             select.appendChild(option);
         });
 
-        // Opção especial dentro da lista para adicionar novo setor
         const addOption = document.createElement('option');
         addOption.value = "__ADD_NEW__";
         addOption.textContent = "+ Adicionar Setor...";
@@ -322,10 +305,8 @@
         if (!selectedVal) {
             select.selectedIndex = 0;
         }
-        adjustSelectWidth(select);
     }
 
-    // Controla quando o usuário clica na opção de adicionar dentro do select
     function handleSectorChange(select) {
         if (select.value === "__ADD_NEW__") {
             const novo = prompt("Digite o nome do novo Setor:");
@@ -334,7 +315,7 @@
                 if (!sectorsList.includes(trimmed)) {
                     sectorsList.push(trimmed);
                     localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
-                    renderSectorsSelect(trimmed); // Seleciona automaticamente o novo setor
+                    renderSectorsSelect(trimmed);
                 } else {
                     alert("Este setor já existe!");
                     renderSectorsSelect();
@@ -342,12 +323,9 @@
             } else {
                 renderSectorsSelect();
             }
-        } else {
-            adjustSelectWidth(select);
         }
     }
 
-    // Sugestão automática de setor baseada no nome do item
     document.getElementById('itemName').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
         if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
