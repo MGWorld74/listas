@@ -36,23 +36,46 @@
             text-align: center;
         }
 
-        .form-group {
+        .form-row {
+            display: flex;
+            gap: 15px;
             margin-bottom: 20px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.item-group {
+            flex: 2; /* Ocupa mais espaço proporcionalmente */
+        }
+
+        .form-group.sector-group {
+            flex: 1;
+            min-width: 140px;
         }
 
         label {
-            display: block;
             margin-bottom: 6px;
             font-weight: bold;
+            font-size: 0.95rem;
         }
 
         input[type="text"], select {
-            width: 100%;
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 1rem;
             box-sizing: border-box;
+            width: 100%;
+        }
+
+        /* Faz o campo de setor ajustar o tamanho baseado no texto */
+        #itemSector {
+            width: auto;
+            min-width: 120px;
         }
 
         .selection-section {
@@ -183,58 +206,52 @@
     <h1>Minhas Listas por Setores</h1>
 
     <form id="itemForm">
-        <div class="form-group">
-            <label for="itemName">Nome do Item:</label>
-            <input type="text" id="itemName" placeholder="Ex: Ibuprofeno, Arroz, Caneta..." required>
-        </div>
+        <!-- Campos Item e Setor lado a lado -->
+        <div class="form-row">
+            <div class="form-group item-group">
+                <label for="itemName">Nome do Item:</label>
+                <input type="text" id="itemName" placeholder="Ex: Ibuprofeno, Arroz, Caneta..." required>
+            </div>
 
-        <div class="form-group">
-            <label for="itemSector">Setor:</label>
-            <input type="text" id="itemSector" list="sectorList" placeholder="Ex: FARMÁCIA, MERCADO..." required>
-            <datalist id="sectorList">
-                <option value="FARMÁCIA">
-                <option value="MERCADO">
-                <option value="ESCRITÓRIO">
-            </datalist>
+            <div class="form-group sector-group">
+                <label for="itemSector">Setor:</label>
+                <input type="text" id="itemSector" list="sectorList" placeholder="Setor..." required oninput="adjustSectorWidth(this)">
+                <datalist id="sectorList">
+                    <option value="FARMÁCIA">
+                    <option value="MERCADO">
+                    <option value="ESCRITÓRIO">
+                </datalist>
+            </div>
         </div>
 
         <!-- Grupo: Unidades de Medida -->
         <div class="selection-section">
             <h3>Unidade de Medida / Tipo</h3>
-            <div class="button-group" id="group-unidades">
-                <!-- Botões gerados via JS -->
-            </div>
+            <div class="button-group" id="group-unidades"></div>
             <button type="button" class="add-option-btn" onclick="addNewOption('unidades')">+ Adicionar Unidade</button>
         </div>
 
         <!-- Grupo: Cores -->
         <div class="selection-section">
             <h3>Cores</h3>
-            <div class="button-group" id="group-cores">
-                <!-- Botões gerados via JS -->
-            </div>
+            <div class="button-group" id="group-cores"></div>
             <button type="button" class="add-option-btn" onclick="addNewOption('cores')">+ Adicionar Cor</button>
         </div>
 
         <!-- Grupo: Outros -->
         <div class="selection-section">
             <h3>Outros</h3>
-            <div class="button-group" id="group-outros">
-                <!-- Botões gerados via JS -->
-            </div>
+            <div class="button-group" id="group-outros"></div>
             <button type="button" class="add-option-btn" onclick="addNewOption('outros')">+ Adicionar Outro</button>
         </div>
 
         <button type="submit" class="btn-submit">Adicionar Item</button>
     </form>
 
-    <div id="listsContainer">
-        <!-- As listas por setor aparecerão aqui dinamicamente -->
-    </div>
+    <div id="listsContainer"></div>
 </div>
 
 <script>
-    // Dados iniciais ou recuperados do LocalStorage
     let optionsData = JSON.parse(localStorage.getItem('optionsData')) || {
         unidades: ["gramas", "comprimidos", "Kg.", "comprimento", "tamanho", "Lt.", "cm.", "metro(s)"],
         cores: ["Branco", "Preto", "Azul", "Vermelho"],
@@ -243,28 +260,37 @@
 
     let itemsList = JSON.parse(localStorage.getItem('itemsList')) || [];
 
-    // Variáveis para guardar as seleções ativas do formulário
     let selectedValues = {
         unidades: "",
         cores: "",
         outros: ""
     };
 
-    // Sugestão automática de setor baseada no nome
+    // Ajusta dinamicamente a largura do input de setor com base no texto digitado
+    function adjustSectorWidth(input) {
+        const text = input.value || input.placeholder;
+        // Cria um elemento temporário para medir o texto
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = window.getComputedStyle(input).font;
+        const width = context.measureText(text).width;
+        input.style.width = Math.max(120, width + 30) + 'px';
+    }
+
+    // Sugestão automática de setor
     document.getElementById('itemName').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
         const sectorInput = document.getElementById('itemSector');
         if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
             sectorInput.value = 'FARMÁCIA';
+            adjustSectorWidth(sectorInput);
         }
     });
 
-    // Renderiza os botões dinâmicos ordenados alfabeticamente
     function renderButtons(category) {
         const container = document.getElementById(`group-${category}`);
         container.innerHTML = '';
         
-        // Ordena em ordem alfabética antes de exibir
         optionsData[category].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 
         optionsData[category].forEach(opt => {
@@ -273,7 +299,6 @@
             btn.className = `choice-btn ${selectedValues[category] === opt ? 'active' : ''}`;
             btn.textContent = opt;
             btn.onclick = () => {
-                // Alterna seleção
                 if (selectedValues[category] === opt) {
                     selectedValues[category] = "";
                 } else {
@@ -285,7 +310,6 @@
         });
     }
 
-    // Função para adicionar nova opção via prompt
     function addNewOption(category) {
         const nova = prompt(`Digite a nova opção para ${category.toUpperCase()}:`);
         if (nova && nova.trim() !== "") {
@@ -301,11 +325,11 @@
         }
     }
 
-    // Submissão do formulário de item
     document.getElementById('itemForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('itemName').value.trim();
-        const sector = document.getElementById('itemSector').value.trim().toUpperCase();
+        const sectorInput = document.getElementById('itemSector');
+        const sector = sectorInput.value.trim().toUpperCase();
 
         if (!name || !sector) return;
 
@@ -321,9 +345,9 @@
         itemsList.push(newItem);
         localStorage.setItem('itemsList', JSON.stringify(itemsList));
 
-        // Limpa campos
         document.getElementById('itemName').value = '';
-        document.getElementById('itemSector').value = '';
+        sectorInput.value = '';
+        adjustSectorWidth(sectorInput);
         selectedValues = { unidades: "", cores: "", outros: "" };
         
         renderButtons('unidades');
@@ -332,12 +356,10 @@
         renderItems();
     });
 
-    // Renderiza a lista de itens agrupados por setores
     function renderItems() {
         const container = document.getElementById('listsContainer');
         container.innerHTML = '';
 
-        // Agrupa por setor
         const sectors = {};
         itemsList.forEach(item => {
             if (!sectors[item.sector]) sectors[item.sector] = [];
@@ -352,7 +374,6 @@
             
             items.forEach(item => {
                 const details = [item.unidade, item.cor, item.outro].filter(Boolean).join(' | ');
-                // Busca entre aspas exatas
                 const searchQuery = encodeURIComponent(`"${item.name}"`);
                 const searchUrl = `https://www.google.com/search?q=${searchQuery}`;
 
@@ -372,11 +393,12 @@
         }
     }
 
-    // Inicialização da página
+    // Inicialização
     renderButtons('unidades');
     renderButtons('cores');
     renderButtons('outros');
     renderItems();
+    adjustSectorWidth(document.getElementById('itemSector'));
 </script>
 
 </body>
