@@ -31,7 +31,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        h1, h2 {
+        h1 {
             color: var(--primary-color);
             text-align: center;
         }
@@ -49,12 +49,12 @@
         }
 
         .form-group.item-group {
-            flex: 2; /* Ocupa mais espaço proporcionalmente */
+            flex: 2;
         }
 
         .form-group.sector-group {
             flex: 1;
-            min-width: 140px;
+            position: relative;
         }
 
         label {
@@ -63,7 +63,7 @@
             font-size: 0.95rem;
         }
 
-        input[type="text"], select {
+        input[type="text"] {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -72,10 +72,28 @@
             width: 100%;
         }
 
-        /* Faz o campo de setor ajustar o tamanho baseado no texto */
         #itemSector {
             width: auto;
-            min-width: 120px;
+            min-width: 140px;
+        }
+
+        .add-sector-container {
+            margin-top: 5px;
+        }
+
+        .add-sector-btn {
+            background: transparent;
+            border: 1px dashed var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .add-sector-btn:hover {
+            background: #e0e7ff;
         }
 
         .selection-section {
@@ -206,7 +224,6 @@
     <h1>Minhas Listas por Setores</h1>
 
     <form id="itemForm">
-        <!-- Campos Item e Setor lado a lado -->
         <div class="form-row">
             <div class="form-group item-group">
                 <label for="itemName">Nome do Item:</label>
@@ -217,10 +234,11 @@
                 <label for="itemSector">Setor:</label>
                 <input type="text" id="itemSector" list="sectorList" placeholder="Setor..." required oninput="adjustSectorWidth(this)">
                 <datalist id="sectorList">
-                    <option value="FARMÁCIA">
-                    <option value="MERCADO">
-                    <option value="ESCRITÓRIO">
+                    <!-- Preenchido via JS -->
                 </datalist>
+                <div class="add-sector-container">
+                    <button type="button" class="add-sector-btn" onclick="addNewSector()">+ Adicionar Setor</button>
+                </div>
             </div>
         </div>
 
@@ -258,6 +276,7 @@
         outros: ["Padrão", "Especial"]
     };
 
+    let sectorsList = JSON.parse(localStorage.getItem('sectorsList')) || ["FARMÁCIA", "MERCADO", "ESCRITÓRIO"];
     let itemsList = JSON.parse(localStorage.getItem('itemsList')) || [];
 
     let selectedValues = {
@@ -266,24 +285,59 @@
         outros: ""
     };
 
-    // Ajusta dinamicamente a largura do input de setor com base no texto digitado
+    // Ajusta dinamicamente a largura do input de setor baseado no texto atual
     function adjustSectorWidth(input) {
         const text = input.value || input.placeholder;
-        // Cria um elemento temporário para medir o texto
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         context.font = window.getComputedStyle(input).font;
         const width = context.measureText(text).width;
-        input.style.width = Math.max(120, width + 30) + 'px';
+        input.style.width = Math.max(130, width + 30) + 'px';
     }
 
-    // Sugestão automática de setor
+    // Atualiza a lista suspensa (datalist) de setores em ordem alfabética
+    function renderSectorsDatalist() {
+        const datalist = document.getElementById('sectorList');
+        datalist.innerHTML = '';
+        
+        sectorsList.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+        sectorsList.forEach(sector => {
+            const option = document.createElement('option');
+            option.value = sector;
+            datalist.appendChild(option);
+        });
+    }
+
+    // Adiciona um novo setor dinamicamente
+    function addNewSector() {
+        const novo = prompt("Digite o nome do novo Setor:");
+        if (novo && novo.trim() !== "") {
+            const trimmed = novo.trim().toUpperCase();
+            if (!sectorsList.includes(trimmed)) {
+                sectorsList.push(trimmed);
+                localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
+                renderSectorsDatalist();
+                
+                // Seleciona automaticamente o novo setor e ajusta o tamanho
+                const sectorInput = document.getElementById('itemSector');
+                sectorInput.value = trimmed;
+                adjustSectorWidth(sectorInput);
+            } else {
+                alert("Este setor já existe!");
+            }
+        }
+    }
+
+    // Sugestão automática de setor baseada no nome do item
     document.getElementById('itemName').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
         const sectorInput = document.getElementById('itemSector');
         if (val.includes('remedio') || val.includes('ibuprofeno') || val.includes('dipirona') || val.includes('comprimido')) {
-            sectorInput.value = 'FARMÁCIA';
-            adjustSectorWidth(sectorInput);
+            if (sectorsList.includes('FARMÁCIA')) {
+                sectorInput.value = 'FARMÁCIA';
+                adjustSectorWidth(sectorInput);
+            }
         }
     });
 
@@ -332,6 +386,13 @@
         const sector = sectorInput.value.trim().toUpperCase();
 
         if (!name || !sector) return;
+
+        // Se o usuário digitou um setor novo direto no input sem usar o botão, adiciona ele à lista também
+        if (!sectorsList.includes(sector)) {
+            sectorsList.push(sector);
+            localStorage.setItem('sectorsList', JSON.stringify(sectorsList));
+            renderSectorsDatalist();
+        }
 
         const newItem = {
             id: Date.now(),
@@ -394,6 +455,7 @@
     }
 
     // Inicialização
+    renderSectorsDatalist();
     renderButtons('unidades');
     renderButtons('cores');
     renderButtons('outros');
