@@ -290,6 +290,5 @@ $('restoreFile').onchange = async e => {
   } catch { alert('Arquivo de backup inválido.'); }
 };
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 fillSelects('', ''); fillColors(''); refresh();
-$('ver').textContent = 'Versão 5 carregada';
