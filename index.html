@@ -102,7 +102,6 @@
     <button type="button" id="restoreBtn" class="btn">Restaurar backup</button>
     <input type="file" id="restoreFile" accept="application/json" hidden>
   </footer>
-  <p id="ver" class="empty noprint" style="text-align:center">carregando…</p>
 </main>
 
 <dialog id="dlg">
@@ -135,20 +134,6 @@
     <menu><button value="ok" class="btn primary">Salvar</button><button value="cancel" class="btn" formnovalidate>Cancelar</button></menu>
   </form>
 </dialog>
-<script>
-// Mostra na tela qualquer erro de carregamento (útil quando o F12 não está à mão)
-(function () {
-  var show = function (m) {
-    var b = document.getElementById('errbox');
-    if (!b) { b = document.createElement('div'); b.id = 'errbox'; b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b91c1c;color:#fff;padding:10px;font:13px monospace;white-space:pre-wrap'; document.body.append(b); }
-    b.textContent += m + '\n';
-  };
-  window.addEventListener('error', function (e) {
-    show(e.target && e.target.tagName === 'SCRIPT' ? 'Não carregou: ' + e.target.src : 'Erro: ' + e.message + ' (' + String(e.filename || '').split('/').slice(-2).join('/') + ':' + e.lineno + ')');
-  }, true);
-  window.addEventListener('unhandledrejection', function (e) { show('Erro: ' + (e.reason && e.reason.message || e.reason)); });
-})();
-</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
