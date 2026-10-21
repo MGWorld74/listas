@@ -16,12 +16,7 @@ textarea{resize:vertical}
 .btn{padding:10px 16px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font-weight:600;cursor:pointer}
 .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;flex:1}
 .btn.primary:hover{background:var(--primary-h)}
-.dots{display:flex;gap:8px;flex-wrap:wrap}
-.dots label{position:relative;margin:0;cursor:pointer}
-.dots input{position:absolute;opacity:0;width:0;height:0}
 .dot{display:block;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--c);text-align:center;line-height:22px;font-size:.8rem;color:var(--muted)}
-.dots input:checked+.dot{outline:3px solid var(--primary);outline-offset:2px}
-.dots input:focus-visible+.dot{outline:3px dashed var(--primary);outline-offset:2px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .toolbar input[type=search]{flex:0 1 280px;min-width:160px;width:auto}
 .sectors{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;align-items:start}
@@ -42,13 +37,12 @@ textarea{resize:vertical}
 .acts{display:flex;gap:4px}
 .acts a,.acts button{border:0;background:none;cursor:pointer;font-size:1rem;text-decoration:none;padding:2px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);max-width:360px;width:90%}
-dialog menu{display:flex;gap:10px;justify-content:flex-end;padding:0;margin:14px 0 0}
+dialog menu{display:flex;flex-direction:row-reverse;gap:10px;justify-content:flex-end;padding:0;margin:14px 0 0}
 .icons{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .icons label{margin:0;font-size:1.4rem;cursor:pointer}
 .icons input{position:absolute;opacity:0;width:0}
 .icons span{display:block;padding:4px;border-radius:8px}
 .icons input:checked+span{background:var(--primary)}
-.colorsel{display:flex;gap:8px;align-items:center}.colorsel select{flex:1}
 .colorfield{position:relative}
 .colorbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);font:inherit;cursor:pointer;min-height:42px}
 .colorlist{position:absolute;top:100%;left:0;z-index:20;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;padding:10px;width:max-content;max-width:260px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
@@ -77,8 +71,24 @@ button.dot{padding:0;cursor:pointer}
 }
 .dot.sm{display:inline-block;width:12px;height:12px;margin-left:8px;vertical-align:middle}
 .tscroll{overflow-x:auto}
-.ltable{table-layout:fixed;width:880px}
+.ltable{table-layout:fixed;width:960px}
 .ltable input{width:100%}
-.ltable .c1{width:220px}.ltable .c2{width:120px}.ltable .c3{width:100px}.ltable .c4{width:200px}.ltable .c5{width:240px}
 .ltable td{vertical-align:top}
 @media print{.ltable{width:100%}.tscroll{overflow:visible}}
+
+.ltable .c1{width:200px}.ltable .c2{width:90px}.ltable .c3{width:110px}.ltable .c4{width:100px}.ltable .c5{width:190px}.ltable .c6{width:270px}
+.unitrow{display:flex;gap:6px}.unitrow .btn{padding:6px 10px}
+.rgroup h3{display:flex;align-items:center;gap:8px}
+.x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:1rem}
+.rrow.link{cursor:pointer}.rrow.link:hover{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+.rrow .btn{padding:4px 10px;font-size:.85rem}
+.acts .mv{font-size:.8rem;opacity:.7}
+.backup{display:flex;gap:10px;justify-content:center;margin:24px 0 0}
+@media (max-width:700px){
+  .ltable{width:100%;table-layout:auto}
+  .ltable,.ltable tbody,.ltable tr,.ltable td{display:block;width:100%!important}
+  .ltable tr:first-child{display:none}
+  .ltable tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px}
+  .ltable td{border:0;padding:4px 6px}
+  .ltable td[data-l]::before{content:attr(data-l);display:block;font-size:.75rem;color:var(--muted)}
+}
