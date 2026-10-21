@@ -23,12 +23,16 @@
         <select id="itemSector" required></select>
       </div>
       <div class="field qty">
-        <label for="itemQty">Qtd.</label>
-        <input type="number" id="itemQty" min="1" max="9999" inputmode="numeric" placeholder="0">
+        <label for="itemQty">Medida:</label>
+        <input type="number" id="itemQty" min="0" max="99999" step="any" inputmode="decimal" placeholder="Ex.: 10">
       </div>
       <div class="field grow">
-        <label for="itemUnit">Unidade / Tipo:</label>
+        <label for="itemUnit">Unidade:</label>
         <div class="unitrow"><select id="itemUnit"></select><button type="button" id="delUnit" class="btn" title="Excluir a unidade selecionada">🗑️</button></div>
+      </div>
+      <div class="field grow">
+        <label for="itemContent">Conteúdo:</label>
+        <input type="text" id="itemContent" maxlength="40" placeholder="Ex.: 30 comprimidos">
       </div>
       <div class="field grow colorfield">
         <label for="colorBtn">Cor:</label>
