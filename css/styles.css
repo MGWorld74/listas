@@ -71,12 +71,12 @@ button.dot{padding:0;cursor:pointer}
 }
 .dot.sm{display:inline-block;width:12px;height:12px;margin-left:8px;vertical-align:middle}
 .tscroll{overflow-x:auto}
-.ltable{table-layout:fixed;width:960px}
+.ltable{table-layout:fixed;width:1020px}
 .ltable input{width:100%}
 .ltable td{vertical-align:top}
 @media print{.ltable{width:100%}.tscroll{overflow:visible}}
 
-.ltable .c1{width:200px}.ltable .c2{width:90px}.ltable .c3{width:110px}.ltable .c4{width:100px}.ltable .c5{width:190px}.ltable .c6{width:270px}
+.ltable .c1{width:200px}.ltable .c2{width:150px}.ltable .c3{width:110px}.ltable .c4{width:100px}.ltable .c5{width:190px}.ltable .c6{width:270px}
 .unitrow{display:flex;gap:6px}.unitrow .btn{padding:6px 10px}
 .rgroup h3{display:flex;align-items:center;gap:8px}
 .x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:1rem}
@@ -92,3 +92,4 @@ button.dot{padding:0;cursor:pointer}
   .ltable td{border:0;padding:4px 6px}
   .ltable td[data-l]::before{content:attr(data-l);display:block;font-size:.75rem;color:var(--muted)}
 }
+.buy{display:flex;gap:4px}.buy input{width:55%}.buy select{width:45%;padding:10px 4px}
