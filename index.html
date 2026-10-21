@@ -14,6 +14,14 @@
 
   <form id="itemForm" class="panel">
     <div class="field">
+      <label for="itemCode">Código de barras / QR Code:</label>
+      <div class="coderow">
+        <input type="text" id="itemCode" maxlength="120" placeholder="Digite ou leia com a câmera">
+        <button type="button" id="scanBtn" class="btn">📷 Ler</button>
+      </div>
+      <p id="codeMsg" class="empty"></p>
+    </div>
+    <div class="field">
       <label for="itemName" class="big">Item:</label>
       <input type="text" id="itemName" class="big" maxlength="80" placeholder="Ex.: Ibuprofeno, Arroz, Caneta" required>
     </div>
@@ -44,6 +52,15 @@
       <label for="itemNotes">Observações:</label>
       <textarea id="itemNotes" rows="4" maxlength="500" placeholder="Marca, tamanho, onde comprar..."></textarea>
     </div>
+    <div class="field">
+      <label for="imgBtn">Imagem do produto:</label>
+      <div class="imgrow">
+        <img id="imgPrev" class="thumb" alt="" hidden>
+        <button type="button" id="imgBtn" class="btn">🖼️ Escolher imagem / tirar foto</button>
+        <button type="button" id="imgDel" class="btn" hidden>Remover</button>
+        <input type="file" id="imgFile" accept="image/*" hidden>
+      </div>
+    </div>
     <div class="row">
       <button type="submit" id="submitBtn" class="btn primary">Adicionar item</button>
       <button type="button" id="cancelEdit" class="btn" hidden>Cancelar edição</button>
@@ -55,6 +72,8 @@
     <button type="submit" class="btn">Buscar</button>
     <button type="button" id="listMode" class="btn" aria-pressed="false">Criar lista</button>
     <button type="button" id="clearDone" class="btn">Remover concluídos</button>
+    <button type="button" id="nfBtn" class="btn">🧾 Cadastrar NF</button>
+    <button type="button" id="billBtn" class="btn">💡 Cadastrar conta</button>
   </form>
 
   <div id="results" class="panel" hidden></div>
@@ -71,6 +90,8 @@
       <button type="button" id="printBtn" class="btn primary">Imprimir</button>
     </div>
   </section>
+
+  <section id="docsPanel" class="panel" hidden></section>
 
   <section id="savedPanel" class="panel" hidden></section>
 
@@ -93,6 +114,24 @@
       <button value="ok" class="btn primary">Salvar</button>
       <button value="cancel" class="btn" formnovalidate>Cancelar</button>
     </menu>
+  </form>
+</dialog>
+<dialog id="docDlg" class="doc">
+  <form method="dialog">
+    <h3 id="docTitle"></h3>
+    <label for="docCode">Código (QR Code ou barras):</label>
+    <div class="coderow"><input type="text" id="docCode" placeholder="Leia com a câmera ou digite"><button type="button" id="docScan" class="btn">📷 Ler</button></div>
+    <p id="docMsg" class="empty"></p>
+    <label for="docStore" id="docStoreL">Loja:</label>
+    <input type="text" id="docStore" maxlength="80">
+    <div id="docCnpjWrap"><label for="docCnpj">CNPJ:</label><input type="text" id="docCnpj" maxlength="18" inputmode="numeric"></div>
+    <div class="row">
+      <div class="field grow"><label for="docDate">Dia:</label><input type="date" id="docDate" required></div>
+      <div class="field grow"><label for="docValue">Valor (R$):</label><input type="number" id="docValue" min="0" step="0.01" inputmode="decimal"></div>
+    </div>
+    <label for="docDesc">Descrição:</label>
+    <input type="text" id="docDesc" maxlength="80" placeholder="Ex.: Conta de luz">
+    <menu><button value="ok" class="btn primary">Salvar</button><button value="cancel" class="btn" formnovalidate>Cancelar</button></menu>
   </form>
 </dialog>
 <script type="module" src="js/main.js"></script>
