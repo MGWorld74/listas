@@ -1,17 +1,20 @@
 // Usa textContent (nunca innerHTML) para evitar injeção de código.
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const btn = (txt, title, fn, cls = '') => { const b = el('button', cls, txt); b.type = 'button'; b.title = title; b.onclick = fn; return b; };
 const money = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dot = c => { const d = el('span', 'dot sm'); d.style.setProperty('--c', c.hex); d.title = c.name; return d; };
-const nameEl = it => { const n = nameEl(it); if (it.color) n.append(dot(it.color)); return n; };
-export const info = it => [it.qty ? 'Qtd: ' + it.qty : '', it.unit].filter(Boolean).join(' • ');
+const nameEl = it => { const n = el('div', 'name', it.name); if (it.color) n.append(dot(it.color)); return n; };
+export const info = it => [it.qty ? 'Qtd: ' + it.qty : '', it.unit].filter(Boolean).join(' ');
 
 export function render(st, listMode, cb) {
   const box = document.getElementById('sectors'); box.replaceChildren();
   st.sectors.forEach(sec => {
     const items = st.items.filter(i => i.sectorId === sec.id).sort((a, b) => a.done - b.done);
     const card = el('section', 'sector'); card.style.setProperty('--sc', sec.color);
-    const head = el('header', 'sector-head');
-    head.append(el('span', 'logo', sec.icon), el('h2', '', sec.name), el('span', 'count', items.length));
+    const head = el('header', 'sector-head'), acts = el('div', 'acts');
+    acts.append(btn('◀', 'Mover para trás', () => cb.secMove(sec.id, -1), 'mv'), btn('▶', 'Mover para frente', () => cb.secMove(sec.id, 1), 'mv'),
+      btn('✏️', 'Editar setor', () => cb.secEdit(sec.id)), btn('🗑️', 'Excluir setor', () => cb.secDel(sec.id)));
+    head.append(el('span', 'logo', sec.icon), el('h2', '', sec.name), acts, el('span', 'count', items.length));
     card.append(head);
     if (!items.length) card.append(el('p', 'empty', 'Nenhum item neste setor.'));
     items.forEach(it => card.append(itemCard(it, st, listMode, cb)));
@@ -25,29 +28,29 @@ function itemCard(it, st, listMode, cb) {
   if (listMode) { chk.checked = st.list.ids.includes(it.id); chk.setAttribute('aria-label', 'Incluir na lista'); chk.onchange = () => cb.select(it.id); }
   else { chk.checked = it.done; chk.setAttribute('aria-label', 'Concluído'); chk.onchange = () => cb.toggle(it.id); }
   const body = el('div', 'body');
-  const nm = el('div', 'name', it.name); if (it.color) nm.append(dot(it.color)); body.append(nm);
+  body.append(nameEl(it));
   if (info(it)) body.append(el('div', 'meta', info(it)));
   if (it.notes) body.append(el('div', 'notes', it.notes));
   const acts = el('div', 'acts');
   const a = el('a', '', '🔍'); a.href = 'https://www.google.com/search?q=' + encodeURIComponent('"' + it.name + '"');
   a.target = '_blank'; a.rel = 'noopener'; a.title = 'Buscar no Google';
-  const ed = el('button', '', '✏️'); ed.title = 'Editar'; ed.onclick = () => cb.edit(it.id);
-  const del = el('button', '', '🗑️'); del.title = 'Excluir'; del.onclick = () => cb.remove(it.id);
-  acts.append(a, ed, del);
+  acts.append(a, btn('✏️', 'Editar', () => cb.edit(it.id)), btn('🗑️', 'Excluir', () => cb.remove(it.id)));
   row.append(chk, body, acts);
   return row;
 }
 
-// Resultados das buscas: um grupo por termo, um embaixo do outro
-export function renderResults(st, terms, norm) {
+// Resultados das buscas: um grupo por termo; "×" remove o termo; clicar num resultado abre a edição
+export function renderResults(st, terms, norm, cb) {
   const box = document.getElementById('results'); box.replaceChildren(); box.hidden = !terms.length;
   terms.forEach(t => {
-    const found = st.items.filter(i => norm(i.name).includes(norm(t)));
-    const g = el('div', 'rgroup'); g.append(el('h3', '', `“${t}” — ${found.length} resultado(s)`));
+    const found = st.items.filter(i => norm(i.name + ' ' + (i.notes || '')).includes(norm(t)));
+    const g = el('div', 'rgroup'), h = el('h3', '', `“${t}” — ${found.length} resultado(s)`);
+    h.append(btn('×', 'Remover esta busca', () => cb.drop(t), 'x')); g.append(h);
     if (!found.length) g.append(el('p', 'empty', 'Nenhum item encontrado.'));
     found.forEach(it => {
       const sec = st.sectors.find(s => s.id === it.sectorId) || { icon: '📁', name: '' };
-      const r = el('div', 'rrow'); r.append(el('span', 'rs', `${sec.icon} ${sec.name}`), nameEl(it));
+      const r = el('div', 'rrow link'); r.title = 'Clique para editar'; r.onclick = () => cb.edit(it.id);
+      r.append(el('span', 'rs', `${sec.icon} ${sec.name}`), nameEl(it));
       if (info(it)) r.append(el('span', 'notes', info(it)));
       g.append(r);
     });
@@ -55,28 +58,32 @@ export function renderResults(st, terms, norm) {
   });
 }
 
-// Quadro da lista: itens marcados, agrupados por setor, com preço
+// Quadro da lista: itens marcados, agrupados por setor, com quantidade a comprar e preço
 export function renderList(st, cb) {
   const body = document.getElementById('listBody'); body.replaceChildren();
   document.getElementById('listDate').textContent = new Date().toLocaleDateString('pt-BR');
+  const heads = ['Item', 'Qtd. a comprar', 'Preço unit. (R$)', 'Subtotal', 'Loja / Mercado', 'Observações'];
+  const field = (type, val, ph, label, fn, extra = {}) => {
+    const i = el('input'); i.type = type; i.value = val; i.placeholder = ph; i.setAttribute('aria-label', label);
+    Object.assign(i, extra); i.oninput = () => fn(i.value); return i;
+  };
   let n = 0;
   st.sectors.forEach(sec => {
     const items = st.items.filter(i => i.sectorId === sec.id && st.list.ids.includes(i.id));
     if (!items.length) return;
     body.append(el('h3', 'list-sec', `${sec.icon} ${sec.name}`));
     const wrap = el('div', 'tscroll'), t = el('table', 'ltable'), head = el('tr');
-    ['Item', 'Preço unit. (R$)', 'Subtotal', 'Loja / Mercado', 'Observações'].forEach((x, i) => head.append(el('th', 'c' + (i + 1), x)));
+    heads.forEach((x, i) => head.append(el('th', 'c' + (i + 1), x)));
     t.append(head);
     items.forEach(it => {
-      n++; const tr = el('tr'), c1 = el('td'), c2 = el('td'), c3 = el('td', 'sub'), c4 = el('td'), c5 = el('td', 'notes', it.notes || '');
-      c1.append(nameEl(it)); if (info(it)) c1.append(el('div', 'notes', info(it)));
-      const inp = el('input'); inp.type = 'number'; inp.min = '0'; inp.step = '0.01'; inp.placeholder = '0,00';
-      inp.value = st.list.prices[it.id] || ''; inp.setAttribute('aria-label', 'Preço de ' + it.name);
-      inp.oninput = () => cb.price(it.id, inp.value);
-      const sto = el('input'); sto.type = 'text'; sto.maxLength = 60; sto.placeholder = 'Loja ou mercado';
-      sto.value = st.list.stores[it.id] || ''; sto.setAttribute('aria-label', 'Loja de ' + it.name);
-      sto.oninput = () => cb.store(it.id, sto.value);
-      c2.append(inp); c3.dataset.id = it.id; c4.append(sto); tr.append(c1, c2, c3, c4, c5); t.append(tr);
+      n++; const tr = el('tr'), td = (c, text) => { const d = el('td', c, text); return d; };
+      const c = [td(), td(), td(), td('sub'), td(), td('notes', it.notes || '')];
+      c[0].append(nameEl(it)); if (info(it)) c[0].append(el('div', 'notes', info(it)));
+      c[1].append(field('number', st.list.qtys[it.id] || '', '1', 'Quantidade a comprar de ' + it.name, v => cb.qty(it.id, v), { min: '1', step: '1' }));
+      c[2].append(field('number', st.list.prices[it.id] || '', '0,00', 'Preço de ' + it.name, v => cb.price(it.id, v), { min: '0', step: '0.01' }));
+      c[3].dataset.id = it.id;
+      c[4].append(field('text', st.list.stores[it.id] || '', 'Loja ou mercado', 'Loja de ' + it.name, v => cb.store(it.id, v), { maxLength: 60 }));
+      c.forEach((d, i) => { if (i) d.dataset.l = heads[i]; tr.append(d); }); t.append(tr);
     });
     wrap.append(t); body.append(wrap);
   });
@@ -84,12 +91,25 @@ export function renderList(st, cb) {
   updateTotals(st);
 }
 
-// Subtotal = preço unitário × quantidade (1 se não houver quantidade)
+// Subtotal = preço unitário × quantidade a comprar (1 se vazia)
 export function updateTotals(st) {
   let total = 0;
   document.querySelectorAll('#listBody .sub').forEach(td => {
-    const it = st.items.find(i => String(i.id) === td.dataset.id); if (!it) return;
-    const v = (Number(st.list.prices[it.id]) || 0) * (Number(it.qty) || 1); total += v; td.textContent = money(v);
+    const id = td.dataset.id, v = (Number(st.list.prices[id]) || 0) * (Number(st.list.qtys[id]) || 1);
+    total += v; td.textContent = money(v);
   });
   document.getElementById('listTotal').textContent = 'Total: ' + money(total);
+}
+
+// Listas salvas com nome e data
+export function renderSaved(st, cb) {
+  const box = document.getElementById('savedPanel'); box.replaceChildren(); box.hidden = !st.saved.length;
+  if (!st.saved.length) return;
+  box.append(el('h2', '', 'Listas salvas'));
+  st.saved.forEach((s, i) => {
+    const r = el('div', 'rrow');
+    r.append(el('strong', '', s.name), el('span', 'rs', new Date(s.date).toLocaleDateString('pt-BR')),
+      el('span', 'notes', `${s.rows.length} item(ns) • ${money(s.total)}`), btn('Excel', 'Salvar como .xlsx', () => cb.xlsx(i), 'btn'), btn('Excluir', 'Excluir lista salva', () => cb.del(i), 'btn'));
+    box.append(r);
+  });
 }

@@ -4,7 +4,7 @@ export const DEFAULTS = {
     { id: 'mercado', name: 'MERCADO', icon: '🛒', color: '#f59e0b' },
     { id: 'escritorio', name: 'ESCRITÓRIO', icon: '📎', color: '#4f46e5' }
   ],
-  units: ['gramas', 'comprimidos', 'Kg.', 'comprimento', 'tamanho', 'Lt.', 'cm.', 'metro(s)'],
+  units: ['mg'],
   colors: [
     { name: 'Branco', hex: '#ffffff' }, { name: 'Preto', hex: '#111827' }, { name: 'Azul', hex: '#2563eb' },
     { name: 'Vermelho', hex: '#dc2626' }, { name: 'Amarelo', hex: '#facc15' }, { name: 'Verde', hex: '#16a34a' },

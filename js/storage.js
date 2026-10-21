@@ -1,19 +1,33 @@
 import { DEFAULTS } from './config.js';
 const KEY = 'listasSetores.v2';
-const slug = n => n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'setor';
+export const slug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'setor';
+// Garante a estrutura dos dados e remove restos de itens já excluídos
+export function fix(st) {
+  const l = st.list = st.list || {};
+  ['prices', 'qtys', 'stores'].forEach(k => l[k] = l[k] || {});
+  const has = id => st.items.some(i => String(i.id) === String(id));
+  l.ids = (l.ids || []).filter(has);
+  ['prices', 'qtys', 'stores'].forEach(k => Object.keys(l[k]).forEach(id => { if (!has(id)) delete l[k][id]; }));
+  st.saved = st.saved || []; st.learn = st.learn || {};
+  return st;
+}
 const old = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
 export function load() {
   const s = old(KEY);
-  if (s && Array.isArray(s.items)) return s;
-  return migrate();
+  if (s && Array.isArray(s.items)) {
+    // Limpeza única da lista de unidades: mantém apenas "mg"
+    if (!s.unitsCleaned) { s.units = ['mg']; s.unitsCleaned = true; save(s); }
+    return fix(s);
+  }
+  return fix(migrate());
 }
 export function save(st) {
   try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { alert('Não foi possível salvar. Exporte um backup.'); }
 }
 // Converte os dados da versão antiga (itemsList, sectorsList...) para o formato novo
 function migrate() {
-  const st = structuredClone(DEFAULTS); st.items = [];
+  const st = structuredClone(DEFAULTS); st.items = []; st.unitsCleaned = true;
   const addSector = n => {
     let s = st.sectors.find(x => x.name === n);
     if (!s) { s = { id: slug(n), name: n, icon: '📁', color: '#6b7280' }; st.sectors.push(s); }
