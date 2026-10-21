@@ -79,7 +79,7 @@ const refresh = () => {
     xlsx: i => exportXlsx(st.saved[i].rows, st.saved[i].total, new Date(st.saved[i].date)).catch(xlsxErr),
     del: i => { if (confirm('Excluir esta lista salva?')) { st.saved.splice(i, 1); save(st); refresh(); } }
   });
-  if (listMode) renderList(st, { price, store, qty });
+  if (listMode) renderList(st, { price, store, qty, buyUnit });
 };
 
 $('itemSector').onchange = async e => {
@@ -134,7 +134,7 @@ $('itemForm').onsubmit = e => {
   const sectorId = $('itemSector').value;
   if (!sectorId || sectorId === NEW) return alert('Selecione um setor.');
   const unit = $('itemUnit').value === NEW ? '' : $('itemUnit').value;
-  const data = { name: $('itemName').value.trim(), sectorId, qty: $('itemQty').value, unit, color, notes: $('itemNotes').value.trim() };
+  const data = { name: $('itemName').value.trim(), sectorId, qty: $('itemQty').value, unit, color, content: $('itemContent').value.trim(), notes: $('itemNotes').value.trim() };
   if (!editing && st.items.some(i => i.sectorId === sectorId && norm(i.name) === norm(data.name)) &&
       !confirm('Já existe um item com esse nome neste setor. Adicionar mesmo assim?')) return;
   st.learn[norm(data.name)] = sectorId;
@@ -143,13 +143,13 @@ $('itemForm').onsubmit = e => {
   save(st); resetForm(); refresh(); $('itemName').focus();
 };
 function resetForm() {
-  editing = null; color = null; auto = false; $('itemName').value = ''; $('itemQty').value = ''; $('itemNotes').value = '';
+  editing = null; color = null; auto = false; $('itemName').value = ''; $('itemQty').value = ''; $('itemContent').value = ''; $('itemNotes').value = '';
   $('submitBtn').textContent = 'Adicionar item'; $('cancelEdit').hidden = true; fillSelects(undefined, ''); fillColors('');
 }
 $('cancelEdit').onclick = resetForm;
 function edit(id) {
   const it = st.items.find(i => i.id === id); editing = id; color = it.color; auto = false;
-  $('itemName').value = it.name; $('itemQty').value = it.qty; $('itemNotes').value = it.notes;
+  $('itemName').value = it.name; $('itemQty').value = it.qty; $('itemContent').value = it.content || ''; $('itemNotes').value = it.notes;
   fillSelects(it.sectorId, it.unit); fillColors(it.color ? it.color.name : '');
   $('submitBtn').textContent = 'Salvar alterações'; $('cancelEdit').hidden = false; $('itemName').focus(); scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -178,8 +178,9 @@ $('listMode').onclick = () => {
 function select(id) { const a = st.list.ids, i = a.indexOf(id); if (i < 0) a.push(id); else a.splice(i, 1); save(st); refresh(); }
 function store(id, v) { st.list.stores[id] = v; save(st); }
 function price(id, v) { st.list.prices[id] = v; save(st); updateTotals(st); }
+function buyUnit(id, v) { st.list.buyUnits[id] = v; save(st); }
 function qty(id, v) { st.list.qtys[id] = v; save(st); updateTotals(st); }
-$('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list = { ids: [], prices: {}, qtys: {}, stores: {} }; save(st); refresh(); } };
+$('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list = { ids: [], prices: {}, qtys: {}, stores: {}, buyUnits: {} }; save(st); refresh(); } };
 $('saveList').onclick = () => {
   const s = snapshot(st); if (!s.rows.length) return alert('Marque ao menos um item para a lista.');
   const name = prompt('Nome da lista:', 'Lista de ' + new Date().toLocaleDateString('pt-BR')); if (!name) return;

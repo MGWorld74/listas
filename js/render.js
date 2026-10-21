@@ -1,10 +1,12 @@
+import { BUY_UNITS } from './config.js';
 // Usa textContent (nunca innerHTML) para evitar injeção de código.
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const btn = (txt, title, fn, cls = '') => { const b = el('button', cls, txt); b.type = 'button'; b.title = title; b.onclick = fn; return b; };
 const money = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dot = c => { const d = el('span', 'dot sm'); d.style.setProperty('--c', c.hex); d.title = c.name; return d; };
 const nameEl = it => { const n = el('div', 'name', it.name); if (it.color) n.append(dot(it.color)); return n; };
-export const info = it => [it.qty ? 'Qtd: ' + it.qty : '', it.unit].filter(Boolean).join(' ');
+// Medida (10 mg) + conteúdo da embalagem (30 comprimidos)
+export const info = it => [[it.qty, it.unit].filter(Boolean).join(' '), it.content].filter(Boolean).join(' • ');
 
 export function render(st, listMode, cb) {
   const box = document.getElementById('sectors'); box.replaceChildren();
@@ -43,7 +45,7 @@ function itemCard(it, st, listMode, cb) {
 export function renderResults(st, terms, norm, cb) {
   const box = document.getElementById('results'); box.replaceChildren(); box.hidden = !terms.length;
   terms.forEach(t => {
-    const found = st.items.filter(i => norm(i.name + ' ' + (i.notes || '')).includes(norm(t)));
+    const found = st.items.filter(i => norm(i.name + ' ' + (i.content || '') + ' ' + (i.notes || '')).includes(norm(t)));
     const g = el('div', 'rgroup'), h = el('h3', '', `“${t}” — ${found.length} resultado(s)`);
     h.append(btn('×', 'Remover esta busca', () => cb.drop(t), 'x')); g.append(h);
     if (!found.length) g.append(el('p', 'empty', 'Nenhum item encontrado.'));
@@ -79,7 +81,9 @@ export function renderList(st, cb) {
       n++; const tr = el('tr'), td = (c, text) => { const d = el('td', c, text); return d; };
       const c = [td(), td(), td(), td('sub'), td(), td('notes', it.notes || '')];
       c[0].append(nameEl(it)); if (info(it)) c[0].append(el('div', 'notes', info(it)));
-      c[1].append(field('number', st.list.qtys[it.id] || '', '1', 'Quantidade a comprar de ' + it.name, v => cb.qty(it.id, v), { min: '1', step: '1' }));
+      const sel = el('select'); BUY_UNITS.forEach(u => sel.append(new Option(u, u)));
+      sel.value = st.list.buyUnits[it.id] || BUY_UNITS[0]; sel.setAttribute('aria-label', 'Tipo de ' + it.name); sel.onchange = () => cb.buyUnit(it.id, sel.value);
+      const w = el('div', 'buy'); w.append(field('number', st.list.qtys[it.id] || '', '1', 'Quantidade a comprar de ' + it.name, v => cb.qty(it.id, v), { min: '1', step: '1' }), sel); c[1].append(w);
       c[2].append(field('number', st.list.prices[it.id] || '', '0,00', 'Preço de ' + it.name, v => cb.price(it.id, v), { min: '0', step: '0.01' }));
       c[3].dataset.id = it.id;
       c[4].append(field('text', st.list.stores[it.id] || '', 'Loja ou mercado', 'Loja de ' + it.name, v => cb.store(it.id, v), { maxLength: 60 }));

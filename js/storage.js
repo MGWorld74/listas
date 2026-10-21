@@ -4,10 +4,10 @@ export const slug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036
 // Garante a estrutura dos dados e remove restos de itens já excluídos
 export function fix(st) {
   const l = st.list = st.list || {};
-  ['prices', 'qtys', 'stores'].forEach(k => l[k] = l[k] || {});
+  ['prices', 'qtys', 'stores', 'buyUnits'].forEach(k => l[k] = l[k] || {});
   const has = id => st.items.some(i => String(i.id) === String(id));
   l.ids = (l.ids || []).filter(has);
-  ['prices', 'qtys', 'stores'].forEach(k => Object.keys(l[k]).forEach(id => { if (!has(id)) delete l[k][id]; }));
+  ['prices', 'qtys', 'stores', 'buyUnits'].forEach(k => Object.keys(l[k]).forEach(id => { if (!has(id)) delete l[k][id]; }));
   st.saved = st.saved || []; st.learn = st.learn || {};
   return st;
 }

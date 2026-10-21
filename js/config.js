@@ -19,3 +19,5 @@ export const KEYWORDS = {
   mercado: ['arroz', 'feijão', 'feijao', 'leite', 'pão', 'pao'],
   escritorio: ['caneta', 'papel', 'grampeador', 'caderno']
 };
+// Tipo da quantidade a comprar (na lista)
+export const BUY_UNITS = ['unidade(s)', 'caixa(s)', 'pacote(s)', 'frasco(s)', 'dúzia(s)', 'Kg', 'Lt.'];
