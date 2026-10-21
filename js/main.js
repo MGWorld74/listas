@@ -1,9 +1,11 @@
 import { ICONS, KEYWORDS } from './config.js';
 import { load, save, slug, fix, exportJSON, importJSON } from './storage.js';
-import { render, renderResults, renderList, updateTotals, renderSaved } from './render.js';
+import { render, renderResults, renderList, updateTotals, renderSaved, renderDocs } from './render.js';
 import { exportXlsx, snapshot } from './export.js';
+import { scanCode, resizeImage } from './media.js';
+import { lookupProduct, fetchImage, lookupCnpj, parseNF, parseBill, cnpjFmt } from './docs.js';
 
-let st = load(); let editing = null; let color = null; let listMode = false; let searches = []; let auto = false;
+let st = load(); let editing = null; let color = null; let listMode = false; let searches = []; let auto = false; let image = '';
 const $ = id => document.getElementById(id);
 const NEW = '__new__';
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -79,6 +81,7 @@ const refresh = () => {
     xlsx: i => exportXlsx(st.saved[i].rows, st.saved[i].total, new Date(st.saved[i].date)).catch(xlsxErr),
     del: i => { if (confirm('Excluir esta lista salva?')) { st.saved.splice(i, 1); save(st); refresh(); } }
   });
+  renderDocs(st, { del: id => { if (confirm('Excluir este registro?')) { st.docs = st.docs.filter(d => d.id !== id); save(st); refresh(); } } });
   if (listMode) renderList(st, { price, store, qty, buyUnit });
 };
 
@@ -110,6 +113,90 @@ $('itemName').oninput = e => {
   if (id && st.sectors.some(s => s.id === id)) { $('itemSector').value = id; auto = true; }
 };
 
+// ---------- Código (câmera ou digitado) e imagem do produto ----------
+function setImage(v) { image = v; $('imgPrev').hidden = $('imgDel').hidden = !v; if (v) $('imgPrev').src = v; else $('imgPrev').removeAttribute('src'); }
+const msg = t => { $('codeMsg').textContent = t; };
+async function lookup(code) {
+  code = code.trim(); $('itemCode').value = code; msg(''); if (!code || editing) return;
+  const it = st.items.find(i => i.code === code);
+  if (it) { alert('Produto já cadastrado: "' + it.name + '". Abrindo para edição.'); return edit(it.id); }
+  const p = st.codes[code];
+  if (p) {
+    $('itemName').value = p.name; $('itemQty').value = p.qty; $('itemContent').value = p.content || ''; $('itemNotes').value = p.notes || '';
+    fillSelects(p.sectorId, p.unit); fillColors(p.color ? p.color.name : ''); setImage(p.image || ''); auto = false;
+    return msg('Produto conhecido: dados preenchidos. Confira e salve.');
+  }
+  if (!/^\d{8,14}$/.test(code)) return;
+  msg('Procurando nas bases públicas...');
+  try {
+    const f = await lookupProduct(code);
+    if ($('itemCode').value.trim() !== code) return;
+    if (!f || !f.name) return msg('Não encontrado nas bases públicas. Preencha os dados; o app lembrará este código.');
+    const fill = (id, v) => { if (v && !$(id).value) $(id).value = v; };
+    fill('itemName', f.name); fill('itemContent', f.quantity); fill('itemNotes', f.brand ? 'Marca: ' + f.brand : '');
+    $('itemName').oninput({ target: $('itemName') });
+    if (!$('itemSector').value && f.food && st.sectors.some(s => s.id === 'mercado')) { $('itemSector').value = 'mercado'; auto = true; }
+    msg('Dados encontrados no Open Food Facts. Confira e clique em "Adicionar item".');
+    if (f.image && !image) try { setImage(await resizeImage(await fetchImage(f.image))); } catch {}
+  } catch { msg('Sem conexão com as bases públicas. Preencha manualmente.'); }
+}
+$('scanBtn').onclick = async () => { const c = await scanCode(); if (c) lookup(c); };
+$('itemCode').onchange = e => lookup(e.target.value);
+$('itemCode').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); lookup(e.target.value); } };
+$('imgBtn').onclick = () => $('imgFile').click();
+$('imgDel').onclick = () => setImage('');
+$('imgFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { setImage(await resizeImage(f)); } catch { alert('Não foi possível usar essa imagem.'); }
+};
+
+// ---------- Cadastrar NF e contas (QR Code / código de barras) ----------
+let docType = 'nf', docKey = '', docLink = '';
+const dmsg = t => { $('docMsg').textContent = t; };
+function openDoc(type) {
+  docType = type; docKey = ''; docLink = '';
+  $('docTitle').textContent = type === 'nf' ? 'Cadastrar NF' : 'Cadastrar conta';
+  $('docStoreL').textContent = type === 'nf' ? 'Loja:' : 'Beneficiário / banco:';
+  $('docCnpjWrap').hidden = type !== 'nf';
+  ['docCode', 'docStore', 'docCnpj', 'docValue', 'docDesc'].forEach(i => $(i).value = '');
+  $('docDate').value = type === 'nf' ? new Date().toLocaleDateString('sv-SE') : '';
+  dmsg(''); $('docDlg').returnValue = ''; $('docDlg').showModal();
+}
+async function readDoc(text) {
+  text = text.trim(); if (!text) return; $('docCode').value = text;
+  if (docType === 'nf') {
+    const r = parseNF(text);
+    if (!r) return dmsg('Não encontrei a chave de acesso (44 dígitos) neste código.');
+    if (st.docs.some(d => d.key === r.key)) return dmsg('Esta nota já foi cadastrada.');
+    docKey = r.key; docLink = r.link; $('docCnpj').value = cnpjFmt(r.cnpj);
+    if (r.date) $('docDate').value = r.date; if (r.value) $('docValue').value = r.value;
+    dmsg('Nota lida. Buscando a loja pelo CNPJ...');
+    try {
+      const n = await lookupCnpj(r.cnpj); if (n && !$('docStore').value) $('docStore').value = n;
+      dmsg('Nota lida. Confira o dia e informe o valor.');
+    } catch { dmsg('Nota lida, mas não achei a loja na internet. Digite o nome e o valor.'); }
+  } else {
+    const r = parseBill(text);
+    if (!r) return dmsg('Código não reconhecido. Use o código de barras do boleto ou da conta (44 a 48 dígitos) ou o QR Code do Pix.');
+    if (r.key && st.docs.some(d => d.key === r.key)) return dmsg('Este boleto/conta já foi cadastrado.');
+    docKey = r.key; $('docStore').value = r.store; $('docDesc').value = r.desc;
+    if (r.value) $('docValue').value = r.value; if (r.date) $('docDate').value = r.date;
+    dmsg(r.date ? 'Lido. O dia é o vencimento do boleto; confira e descreva a conta.' : 'Lido. Informe o dia e confira os dados.');
+  }
+}
+$('nfBtn').onclick = () => openDoc('nf');
+$('billBtn').onclick = () => openDoc('conta');
+$('docScan').onclick = async () => { const c = await scanCode(); if (c) readDoc(c); };
+$('docCode').onchange = e => readDoc(e.target.value);
+$('docCode').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); readDoc(e.target.value); } };
+$('docDlg').onclose = () => {
+  if ($('docDlg').returnValue !== 'ok') return;
+  const d = { id: Date.now(), type: docType, store: $('docStore').value.trim(), cnpj: $('docCnpj').value.replace(/\D/g, ''), date: $('docDate').value,
+    value: Number($('docValue').value) || 0, desc: $('docDesc').value.trim(), key: docKey, link: docLink };
+  if (d.key && st.docs.some(x => x.key === d.key)) return alert('Este documento já foi cadastrado.');
+  st.docs.push(d); save(st); refresh();
+};
+
 // ---------- Setores: reordenar, editar, excluir ----------
 function secMove(id, d) {
   const a = st.sectors, i = a.findIndex(s => s.id === id), j = i + d;
@@ -134,22 +221,24 @@ $('itemForm').onsubmit = e => {
   const sectorId = $('itemSector').value;
   if (!sectorId || sectorId === NEW) return alert('Selecione um setor.');
   const unit = $('itemUnit').value === NEW ? '' : $('itemUnit').value;
-  const data = { name: $('itemName').value.trim(), sectorId, qty: $('itemQty').value, unit, color, content: $('itemContent').value.trim(), notes: $('itemNotes').value.trim() };
+  const data = { name: $('itemName').value.trim(), sectorId, qty: $('itemQty').value, unit, color, content: $('itemContent').value.trim(), notes: $('itemNotes').value.trim(), code: $('itemCode').value.trim(), image };
   if (!editing && st.items.some(i => i.sectorId === sectorId && norm(i.name) === norm(data.name)) &&
       !confirm('Já existe um item com esse nome neste setor. Adicionar mesmo assim?')) return;
+  if (data.code && st.items.some(i => i.code === data.code && i.id !== editing)) return alert('Já existe um produto com esse código.');
   st.learn[norm(data.name)] = sectorId;
+  if (data.code) st.codes[data.code] = { name: data.name, sectorId, qty: data.qty, unit, content: data.content, color, notes: data.notes, image };
   if (editing) Object.assign(st.items.find(i => i.id === editing), data);
   else st.items.push({ id: Date.now(), done: false, ...data });
   save(st); resetForm(); refresh(); $('itemName').focus();
 };
 function resetForm() {
-  editing = null; color = null; auto = false; $('itemName').value = ''; $('itemQty').value = ''; $('itemContent').value = ''; $('itemNotes').value = '';
+  editing = null; color = null; auto = false; $('itemName').value = ''; $('itemQty').value = ''; $('itemContent').value = ''; $('itemNotes').value = ''; $('itemCode').value = ''; msg(''); setImage('');
   $('submitBtn').textContent = 'Adicionar item'; $('cancelEdit').hidden = true; fillSelects(undefined, ''); fillColors('');
 }
 $('cancelEdit').onclick = resetForm;
 function edit(id) {
   const it = st.items.find(i => i.id === id); editing = id; color = it.color; auto = false;
-  $('itemName').value = it.name; $('itemQty').value = it.qty; $('itemContent').value = it.content || ''; $('itemNotes').value = it.notes;
+  $('itemName').value = it.name; $('itemQty').value = it.qty; $('itemContent').value = it.content || ''; $('itemCode').value = it.code || ''; setImage(it.image || ''); $('itemNotes').value = it.notes;
   fillSelects(it.sectorId, it.unit); fillColors(it.color ? it.color.name : '');
   $('submitBtn').textContent = 'Salvar alterações'; $('cancelEdit').hidden = false; $('itemName').focus(); scrollTo({ top: 0, behavior: 'smooth' });
 }
