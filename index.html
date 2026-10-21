@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Listas por Setores</title>
+<title>Listas Diversas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <main class="app">
-  <h1>Minhas listas por setores</h1>
+  <h1>LISTAS DIVERSAS</h1>
 
   <form id="itemForm" class="panel">
     <div class="field">
@@ -26,7 +28,7 @@
       </div>
       <div class="field grow">
         <label for="itemUnit">Unidade / Tipo:</label>
-        <select id="itemUnit"></select>
+        <div class="unitrow"><select id="itemUnit"></select><button type="button" id="delUnit" class="btn" title="Excluir a unidade selecionada">🗑️</button></div>
       </div>
       <div class="field grow colorfield">
         <label for="colorBtn">Cor:</label>
@@ -48,6 +50,7 @@
     <input type="search" id="q" placeholder="Buscar item" aria-label="Buscar item">
     <button type="submit" class="btn">Buscar</button>
     <button type="button" id="listMode" class="btn" aria-pressed="false">Criar lista</button>
+    <button type="button" id="clearDone" class="btn">Remover concluídos</button>
   </form>
 
   <div id="results" class="panel" hidden></div>
@@ -59,12 +62,21 @@
     <p id="listTotal" class="total"></p>
     <div class="row noprint">
       <button type="button" id="clearList" class="btn">Limpar lista</button>
+      <button type="button" id="saveList" class="btn">Salvar lista</button>
       <button type="button" id="xlsxBtn" class="btn primary">Salvar .xlsx</button>
       <button type="button" id="printBtn" class="btn primary">Imprimir</button>
     </div>
   </section>
 
+  <section id="savedPanel" class="panel" hidden></section>
+
   <div id="sectors" class="sectors"></div>
+
+  <footer class="backup noprint">
+    <button type="button" id="backupBtn" class="btn">Salvar backup</button>
+    <button type="button" id="restoreBtn" class="btn">Restaurar backup</button>
+    <input type="file" id="restoreFile" accept="application/json" hidden>
+  </footer>
 </main>
 
 <dialog id="dlg">
@@ -74,8 +86,8 @@
     <div id="dlgIcons" class="icons" hidden></div>
     <label id="dlgColorLabel" hidden>Cor: <input type="color" id="dlgColor" value="#4f46e5"></label>
     <menu>
-      <button value="cancel" class="btn" formnovalidate>Cancelar</button>
       <button value="ok" class="btn primary">Salvar</button>
+      <button value="cancel" class="btn" formnovalidate>Cancelar</button>
     </menu>
   </form>
 </dialog>
