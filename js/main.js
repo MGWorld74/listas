@@ -1,11 +1,12 @@
 import { ICONS, KEYWORDS } from './config.js';
-import { load, save, slug, fix, exportJSON, importJSON } from './storage.js';
+import { load, save, slug, fix, uid, tomb, exportJSON, importJSON } from './storage.js';
+import { initSync, exportLote, mergeFile, pickDir } from './sync.js';
 import { render, renderResults, renderList, updateTotals, renderSaved, renderDocs } from './render.js';
 import { exportXlsx, snapshot } from './export.js';
 import { scanCode, resizeImage } from './media.js';
 import { lookupProduct, fetchImage, lookupCnpj, parseNF, parseBill, cnpjFmt } from './docs.js';
 
-let st = load(); let editing = null; let color = null; let listMode = false; let searches = []; let auto = false; let image = '';
+let st = await load(); let editing = null; let color = null; let listMode = false; let searches = []; let auto = false; let image = '';
 const $ = id => document.getElementById(id);
 const NEW = '__new__';
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -79,9 +80,9 @@ const refresh = () => {
   renderResults(st, searches, norm, { edit, drop: t => { searches = searches.filter(x => x !== t); refresh(); } });
   renderSaved(st, {
     xlsx: i => exportXlsx(st.saved[i].rows, st.saved[i].total, new Date(st.saved[i].date)).catch(xlsxErr),
-    del: i => { if (confirm('Excluir esta lista salva?')) { st.saved.splice(i, 1); save(st); refresh(); } }
+    del: i => { if (confirm('Excluir esta lista salva?')) { tomb(st, st.saved[i].id); st.saved.splice(i, 1); save(st); refresh(); } }
   });
-  renderDocs(st, { del: id => { if (confirm('Excluir este registro?')) { st.docs = st.docs.filter(d => d.id !== id); save(st); refresh(); } } });
+  renderDocs(st, { del: id => { if (confirm('Excluir este registro?')) { tomb(st, id); st.docs = st.docs.filter(d => d.id !== id); save(st); refresh(); } } });
   if (listMode) renderList(st, { price, store, qty, buyUnit });
 };
 
@@ -191,7 +192,7 @@ $('docCode').onchange = e => readDoc(e.target.value);
 $('docCode').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); readDoc(e.target.value); } };
 $('docDlg').onclose = () => {
   if ($('docDlg').returnValue !== 'ok') return;
-  const d = { id: Date.now(), type: docType, store: $('docStore').value.trim(), cnpj: $('docCnpj').value.replace(/\D/g, ''), date: $('docDate').value,
+  const d = { id: uid(), u: Date.now(), type: docType, store: $('docStore').value.trim(), cnpj: $('docCnpj').value.replace(/\D/g, ''), date: $('docDate').value,
     value: Number($('docValue').value) || 0, desc: $('docDesc').value.trim(), key: docKey, link: docLink };
   if (d.key && st.docs.some(x => x.key === d.key)) return alert('Este documento já foi cadastrado.');
   st.docs.push(d); save(st); refresh();
@@ -227,8 +228,8 @@ $('itemForm').onsubmit = e => {
   if (data.code && st.items.some(i => i.code === data.code && i.id !== editing)) return alert('Já existe um produto com esse código.');
   st.learn[norm(data.name)] = sectorId;
   if (data.code) st.codes[data.code] = { name: data.name, sectorId, qty: data.qty, unit, content: data.content, color, notes: data.notes, image };
-  if (editing) Object.assign(st.items.find(i => i.id === editing), data);
-  else st.items.push({ id: Date.now(), done: false, ...data });
+  if (editing) Object.assign(st.items.find(i => i.id === editing), data, { u: Date.now() });
+  else st.items.push({ id: uid(), u: Date.now(), done: false, ...data });
   save(st); resetForm(); refresh(); $('itemName').focus();
 };
 function resetForm() {
@@ -242,12 +243,12 @@ function edit(id) {
   fillSelects(it.sectorId, it.unit); fillColors(it.color ? it.color.name : '');
   $('submitBtn').textContent = 'Salvar alterações'; $('cancelEdit').hidden = false; $('itemName').focus(); scrollTo({ top: 0, behavior: 'smooth' });
 }
-function toggle(id) { const it = st.items.find(i => i.id === id); it.done = !it.done; save(st); refresh(); }
-function remove(id) { if (confirm('Excluir este item?')) { st.items = st.items.filter(i => i.id !== id); fix(st); save(st); refresh(); } }
+function toggle(id) { const it = st.items.find(i => i.id === id); it.done = !it.done; it.u = Date.now(); save(st); refresh(); }
+function remove(id) { if (confirm('Excluir este item?')) { tomb(st, id); st.items = st.items.filter(i => i.id !== id); fix(st); save(st); refresh(); } }
 $('clearDone').onclick = () => {
   const n = st.items.filter(i => i.done).length;
   if (!n) return alert('Nenhum item concluído.');
-  if (confirm(`Remover ${n} item(ns) concluído(s)?`)) { st.items = st.items.filter(i => !i.done); fix(st); save(st); refresh(); }
+  if (confirm(`Remover ${n} item(ns) concluído(s)?`)) { st.items.filter(i => i.done).forEach(i => tomb(st, i.id)); st.items = st.items.filter(i => !i.done); fix(st); save(st); refresh(); }
 };
 
 // ---------- Busca entre setores ----------
@@ -273,7 +274,7 @@ $('clearList').onclick = () => { if (confirm('Limpar a lista?')) { st.list = { i
 $('saveList').onclick = () => {
   const s = snapshot(st); if (!s.rows.length) return alert('Marque ao menos um item para a lista.');
   const name = prompt('Nome da lista:', 'Lista de ' + new Date().toLocaleDateString('pt-BR')); if (!name) return;
-  st.saved.push({ name: name.trim().slice(0, 60), date: new Date().toISOString(), rows: s.rows, total: s.total }); save(st); refresh();
+  st.saved.push({ id: uid(), u: Date.now(), name: name.trim().slice(0, 60), date: new Date().toISOString(), rows: s.rows, total: s.total }); save(st); refresh();
 };
 $('printBtn').onclick = () => window.print();
 $('xlsxBtn').onclick = () => { const s = snapshot(st); exportXlsx(s.rows, s.total).catch(xlsxErr); };
@@ -292,4 +293,16 @@ $('restoreFile').onchange = async e => {
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 fillSelects('', ''); fillColors(''); refresh();
-$('ver').textContent = 'Versão 5 carregada';
+
+// ---------- Celular <-> computador e pasta do HD ----------
+initSync(() => st, () => { fillSelects(); fillColors(color ? color.name : ''); refresh(); });
+$('loteBtn').onclick = () => exportLote(false);
+$('shareBtn').onclick = () => exportLote(true);
+$('mergeBtn').onclick = () => $('mergeFile').click();
+$('mergeFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const n = await mergeFile(f); alert(`Juntado: ${n.add} novo(s), ${n.upd} atualizado(s), ${n.del} excluído(s).`); }
+  catch { alert('Arquivo inválido.'); }
+};
+$('dirBtn').onclick = pickDir;
+$('ver').textContent = 'Versão 6 carregada';

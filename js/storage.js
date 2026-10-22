@@ -1,6 +1,13 @@
 import { DEFAULTS } from './config.js';
-const KEY = 'listasSetores.v2';
+const KEY = 'listasSetores.v2';   // chave antiga do localStorage (só lida na migração)
 export const slug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'setor';
+// Identificador único (não repete entre celular e computador)
+export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// Registra que o item/registro foi excluído, para a exclusão também valer ao juntar arquivos
+export const tomb = (st, id) => { st.deleted[String(id)] = Date.now(); };
+// Data da última alteração (itens antigos usam o momento em que foram criados)
+export const ts = x => x.u || (Number(x.id) > 1e12 ? Number(x.id) : Date.parse(x.date) || 0);
+
 // Garante a estrutura dos dados e remove restos de itens já excluídos
 export function fix(st) {
   const l = st.list = st.list || {};
@@ -9,22 +16,56 @@ export function fix(st) {
   l.ids = (l.ids || []).filter(has);
   ['prices', 'qtys', 'stores', 'buyUnits'].forEach(k => Object.keys(l[k]).forEach(id => { if (!has(id)) delete l[k][id]; }));
   st.saved = st.saved || []; st.codes = st.codes || {}; st.docs = st.docs || []; st.learn = st.learn || {};
+  st.deleted = st.deleted || {};
+  st.meta = st.meta || {}; st.meta.device = st.meta.device || uid(); st.meta.lastExport = st.meta.lastExport || 0;
+  st.saved.forEach(s => { s.id = s.id || 'l' + (Date.parse(s.date) || uid()); });
+  [...st.items, ...st.docs, ...st.saved].forEach(x => { x.u = x.u || ts(x); });
   return st;
 }
 const old = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 
-export function load() {
-  const s = old(KEY);
-  if (s && Array.isArray(s.items)) {
-    // Limpeza única da lista de unidades: mantém apenas "mg"
-    if (!s.unitsCleaned) { s.units = ['mg']; s.unitsCleaned = true; save(s); }
-    return fix(s);
-  }
-  return fix(migrate());
+// ---------- IndexedDB: guarda o estado inteiro numa única chave ----------
+let dbp;
+const db = () => dbp || (dbp = new Promise((ok, err) => {
+  const r = indexedDB.open('listasDB', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv');
+  r.onsuccess = () => ok(r.result); r.onerror = () => err(r.error);
+}));
+const tx = async (mode, fn) => {
+  const d = await db();
+  return new Promise((ok, err) => {
+    const t = d.transaction('kv', mode), r = fn(t.objectStore('kv'));
+    t.oncomplete = () => ok(r && r.result); t.onerror = t.onabort = () => err(t.error);
+  });
+};
+export const kvGet = k => tx('readonly', s => s.get(k));
+export const kvSet = (k, v) => tx('readwrite', s => s.put(v, k));
+
+export async function load() {
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+  let s = null;
+  try { s = await kvGet('state'); } catch {}
+  if (s && Array.isArray(s.items)) return fix(s);
+  // Primeira vez com o banco novo: traz o que estava no localStorage (ele não é apagado)
+  const o = old(KEY);
+  s = o && Array.isArray(o.items) ? o : migrate();
+  if (!s.unitsCleaned) { s.units = ['mg']; s.unitsCleaned = true; }
+  fix(s);
+  try { await kvSet('state', s); } catch {}
+  return s;
 }
-export function save(st) {
-  try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { alert('Não foi possível salvar. Exporte um backup.'); }
+
+const hooks = []; let timer = 0, last = null, warned = false;
+export const afterSave = f => hooks.push(f);
+async function flush() {
+  if (!last) return; const st = last;
+  try { await kvSet('state', st); hooks.forEach(f => f(st)); }
+  catch { if (!warned) { warned = true; alert('Não foi possível salvar neste aparelho. Exporte um backup.'); } }
 }
+// Mesma chamada de antes (save(st)); agora grava no IndexedDB logo em seguida
+export function save(st) { last = st; clearTimeout(timer); timer = setTimeout(flush, 300); }
+addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(timer); flush(); } });
+
 // Converte os dados da versão antiga (itemsList, sectorsList...) para o formato novo
 function migrate() {
   const st = structuredClone(DEFAULTS); st.items = []; st.unitsCleaned = true;
