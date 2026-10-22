@@ -1,9 +1,11 @@
 import { BUY_UNITS } from './config.js';
+import { cnpjFmt } from './docs.js';
 // Usa textContent (nunca innerHTML) para evitar injeção de código.
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const btn = (txt, title, fn, cls = '') => { const b = el('button', cls, txt); b.type = 'button'; b.title = title; b.onclick = fn; return b; };
 const money = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dot = c => { const d = el('span', 'dot sm'); d.style.setProperty('--c', c.hex); d.title = c.name; return d; };
+const thumb = it => { if (!it.image) return null; const i = el('img', 'thumb'); i.src = it.image; i.alt = ''; return i; };
 const nameEl = it => { const n = el('div', 'name', it.name); if (it.color) n.append(dot(it.color)); return n; };
 // Medida (10 mg) + conteúdo da embalagem (30 comprimidos)
 export const info = it => [[it.qty, it.unit].filter(Boolean).join(' '), it.content].filter(Boolean).join(' • ');
@@ -37,7 +39,7 @@ function itemCard(it, st, listMode, cb) {
   const a = el('a', '', '🔍'); a.href = 'https://www.google.com/search?q=' + encodeURIComponent('"' + it.name + '"');
   a.target = '_blank'; a.rel = 'noopener'; a.title = 'Buscar no Google';
   acts.append(a, btn('✏️', 'Editar', () => cb.edit(it.id)), btn('🗑️', 'Excluir', () => cb.remove(it.id)));
-  row.append(chk, body, acts);
+  const t = thumb(it); row.append(chk, ...(t ? [t] : []), body, acts);
   return row;
 }
 
@@ -45,7 +47,7 @@ function itemCard(it, st, listMode, cb) {
 export function renderResults(st, terms, norm, cb) {
   const box = document.getElementById('results'); box.replaceChildren(); box.hidden = !terms.length;
   terms.forEach(t => {
-    const found = st.items.filter(i => norm(i.name + ' ' + (i.content || '') + ' ' + (i.notes || '')).includes(norm(t)));
+    const found = st.items.filter(i => norm(i.name + ' ' + (i.code || '') + ' ' + (i.content || '') + ' ' + (i.notes || '')).includes(norm(t)));
     const g = el('div', 'rgroup'), h = el('h3', '', `“${t}” — ${found.length} resultado(s)`);
     h.append(btn('×', 'Remover esta busca', () => cb.drop(t), 'x')); g.append(h);
     if (!found.length) g.append(el('p', 'empty', 'Nenhum item encontrado.'));
@@ -80,7 +82,8 @@ export function renderList(st, cb) {
     items.forEach(it => {
       n++; const tr = el('tr'), td = (c, text) => { const d = el('td', c, text); return d; };
       const c = [td(), td(), td(), td('sub'), td(), td('notes', it.notes || '')];
-      c[0].append(nameEl(it)); if (info(it)) c[0].append(el('div', 'notes', info(it)));
+      const t = thumb(it), nm = el('div'); nm.append(nameEl(it)); if (info(it)) nm.append(el('div', 'notes', info(it)));
+      if (t) { const h = el('div', 'withimg'); h.append(t, nm); c[0].append(h); } else c[0].append(nm);
       const sel = el('select'); BUY_UNITS.forEach(u => sel.append(new Option(u, u)));
       sel.value = st.list.buyUnits[it.id] || BUY_UNITS[0]; sel.setAttribute('aria-label', 'Tipo de ' + it.name); sel.onchange = () => cb.buyUnit(it.id, sel.value);
       const w = el('div', 'buy'); w.append(field('number', st.list.qtys[it.id] || '', '1', 'Quantidade a comprar de ' + it.name, v => cb.qty(it.id, v), { min: '1', step: '1' }), sel); c[1].append(w);
@@ -116,4 +119,24 @@ export function renderSaved(st, cb) {
       el('span', 'notes', `${s.rows.length} item(ns) • ${money(s.total)}`), btn('Excel', 'Salvar como .xlsx', () => cb.xlsx(i), 'btn'), btn('Excluir', 'Excluir lista salva', () => cb.del(i), 'btn'));
     box.append(r);
   });
+}
+
+// Compras (NF) e contas cadastradas
+export function renderDocs(st, cb) {
+  const box = document.getElementById('docsPanel'); box.replaceChildren(); box.hidden = !st.docs.length;
+  if (!st.docs.length) return;
+  box.append(el('h2', '', 'Compras e contas'));
+  let total = 0;
+  [...st.docs].sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(d => {
+    total += d.value || 0;
+    const r = el('div', 'rrow');
+    r.append(el('span', 'rs', (d.type === 'nf' ? '🧾 ' : '💡 ') + (d.date ? d.date.split('-').reverse().join('/') : '')), el('strong', '', d.store || d.desc || '—'));
+    const extra = [d.type === 'nf' ? '' : d.desc, d.cnpj ? 'CNPJ ' + cnpjFmt(d.cnpj) : ''].filter(Boolean).join(' • ');
+    if (extra) r.append(el('span', 'notes', extra));
+    r.append(el('span', '', money(d.value || 0)));
+    if (d.link) { const a = el('a', '', 'Abrir nota'); a.href = d.link; a.target = '_blank'; a.rel = 'noopener'; r.append(a); }
+    r.append(btn('🗑️', 'Excluir', () => cb.del(d.id)));
+    box.append(r);
+  });
+  box.append(el('p', 'total', 'Total: ' + money(total)));
 }

@@ -8,7 +8,7 @@ export function fix(st) {
   const has = id => st.items.some(i => String(i.id) === String(id));
   l.ids = (l.ids || []).filter(has);
   ['prices', 'qtys', 'stores', 'buyUnits'].forEach(k => Object.keys(l[k]).forEach(id => { if (!has(id)) delete l[k][id]; }));
-  st.saved = st.saved || []; st.learn = st.learn || {};
+  st.saved = st.saved || []; st.codes = st.codes || {}; st.docs = st.docs || []; st.learn = st.learn || {};
   return st;
 }
 const old = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
