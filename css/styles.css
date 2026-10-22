@@ -28,7 +28,7 @@ textarea{resize:vertical}
 .empty{color:var(--muted);font-size:.9rem;margin:6px 0}
 .item{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}
 .item.done .name{text-decoration:line-through;opacity:.55}
-.thumb{width:48px;height:48px;border-radius:6px;object-fit:cover;flex:none;background:var(--bg)}
+.thumb{width:42px;height:42px;border-radius:6px;object-fit:cover;flex:none;background:var(--bg)}
 .body{flex:1;min-width:0}
 .meta{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
 .meta .dot{width:12px;height:12px;line-height:0}
@@ -93,8 +93,5 @@ button.dot{padding:0;cursor:pointer}
   .ltable td[data-l]::before{content:attr(data-l);display:block;font-size:.75rem;color:var(--muted)}
 }
 .buy{display:flex;gap:4px}.buy input{width:55%}.buy select{width:45%;padding:10px 4px}
-.coderow,.imgrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.coderow input{flex:1;min-width:0}.coderow .btn{flex:none}
-.withimg{display:flex;gap:8px;align-items:center}
-dialog.scan{max-width:420px;width:92%;padding:12px;text-align:center}dialog.scan video{width:100%;border-radius:8px;background:#000}
-dialog.doc{max-width:420px}dialog.doc label{display:block;margin:10px 0 4px}dialog.doc .field{margin-bottom:0}
-.rrow a{font-size:.85rem}
+
+#syncPanel{margin-top:24px}#syncPanel .row .btn.primary{flex:0 1 auto}
