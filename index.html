@@ -97,6 +97,18 @@
 
   <div id="sectors" class="sectors"></div>
 
+  <section id="syncPanel" class="panel noprint">
+    <h2>Celular e computador</h2>
+    <div class="row">
+      <button type="button" id="loteBtn" class="btn primary">Exportar alterações</button>
+      <button type="button" id="shareBtn" class="btn" hidden>Compartilhar</button>
+      <button type="button" id="mergeBtn" class="btn">Juntar arquivo</button>
+      <button type="button" id="dirBtn" class="btn" hidden>Abrir pasta do HD</button>
+      <input type="file" id="mergeFile" accept="application/json,.json" hidden>
+    </div>
+    <p id="sync" class="empty"></p>
+  </section>
+
   <footer class="backup noprint">
     <button type="button" id="backupBtn" class="btn">Salvar backup</button>
     <button type="button" id="restoreBtn" class="btn">Restaurar backup</button>
